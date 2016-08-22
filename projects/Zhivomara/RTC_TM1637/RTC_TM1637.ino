@@ -11,12 +11,16 @@
 #define TEST_DELAY   2000
 
 TM1637Display display(CLK, DIO);
+int photoResistorPin = 1;  //define a pin for Photo resistor
 
+String display_mode;
 
 void setup()
 {
   Wire.begin();
   Serial.begin(9600);
+display_mode = "clock";
+  
   // set the initial time here:
   // DS3231 seconds, minutes, hours, day, date, month, year
   //setDS3231time(30,17,1,2,22,8,16);
@@ -27,14 +31,42 @@ void loop()
 {
 //if hour is clicked - increment hour
 //if minute is clicked - increment minute
-  
-  DisplayTime();
+//if mode button is clicked - change mode.
+SetLEDBrightness();
+delay(TEST_DELAY);
+
+  if (display_mode == "clock") {
+    DisplayTime();
+  } else {
+    //display temperature
+  }
 }
 
+void SetLEDBrightness()
+{
+  int photoResult = analogRead(photoResistorPin);
+
+Serial.print("PHOTORESISTOR:");
+Serial.println(photoResult);
+  
+  if (photoResult > 600)
+  {
+    display.setBrightness(0x0d);
+    Serial.println("highlight");
+  } else if (photoResult > 400) {
+    display.setBrightness(0x08);
+    Serial.println("med_light");
+  } else
+  {
+    Serial.println("lowlight");
+    display.setBrightness(0x04);
+  }
+  //delay(250);
+}
 
 void DisplayTime()
 {
-  display.setBrightness(0x0f);
+  //display.setBrightness(0x0f);
 
   byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
 readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
