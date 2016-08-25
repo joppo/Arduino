@@ -1,6 +1,12 @@
 #include "Wire.h"
 #include "Arduino.h"
 #include "TM1637Display.h"
+#include "DHT.h"
+
+#define DHTTYPE DHT22
+#define DHTPIN 5
+DHT dht(DHTPIN, DHTTYPE);
+
 
 // Display connection pins (Digital Pins)
 #define CLK 8
@@ -12,20 +18,22 @@
 
 TM1637Display display(CLK, DIO);
 int photoResistorPin = 1;  //define a pin for Photo resistor
+int buttonMode = 13;
 
 String display_mode;
 
 void setup()
 {
+  pinMode(buttonMode, INPUT);
   Wire.begin();
+  dht.begin();
   Serial.begin(9600);
-display_mode = "clock";
+display_mode = "temperature";
   
   // set the initial time here:
   // DS3231 seconds, minutes, hours, day, date, month, year
   //setDS3231time(30,17,1,2,22,8,16);
 }
-
 
 void loop()
 {
@@ -33,12 +41,32 @@ void loop()
 //if minute is clicked - increment minute
 //if mode button is clicked - change mode.
 SetLEDBrightness();
+
+ButtonClick();
+
 delay(TEST_DELAY);
 
   if (display_mode == "clock") {
     DisplayTime();
   } else {
-    //display temperature
+    DisplayDHTInSerialMonitor();
+  }
+}
+
+void ButtonClick()
+{
+  int btn_click_value = 0;
+  btn_click_value = digitalRead(buttonMode);
+
+//by default is LOW
+  if (btn_click_value == HIGH) {
+      if (display_mode == "clock") {
+        display_mode = "temperature";
+      } else if (display_mode == "temperature")
+      {
+        display_mode = "clock";
+      }
+    
   }
 }
 
@@ -46,8 +74,8 @@ void SetLEDBrightness()
 {
   int photoResult = analogRead(photoResistorPin);
 
-Serial.print("PHOTORESISTOR:");
-Serial.println(photoResult);
+//Serial.print("PHOTORESISTOR:");
+//Serial.println(photoResult);
   
   if (photoResult > 600)
   {
@@ -62,6 +90,27 @@ Serial.println(photoResult);
     display.setBrightness(0x04);
   }
   //delay(250);
+}
+
+
+void DisplayDHTInSerialMonitor()
+{
+    // DISPLAY DATA
+  Serial.print(dht.readHumidity());
+  Serial.print(",\t");
+  Serial.println(dht.readTemperature());
+
+  
+  int v = (int)dht.readTemperature();
+  Serial.print("temmp:");
+  Serial.println(v);
+  int ones = v%10;
+  v = v/10;
+  int dec= v%10;
+  Serial.print("first digit");
+  Serial.println(dec);
+  Serial.print("second digit");
+  Serial.println(ones);
 }
 
 void DisplayTime()
