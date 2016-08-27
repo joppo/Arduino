@@ -82,6 +82,7 @@ void TM1637Display::setColon(bool colon)
   setSegments(m_digit,1,1);
 }
 
+
 void TM1637Display::setSegments(const uint8_t segments[], uint8_t length, uint8_t pos)
 {
     // Write COMM1

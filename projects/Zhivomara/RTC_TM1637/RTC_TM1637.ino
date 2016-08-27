@@ -13,7 +13,7 @@ dht DHT;
 
 #define DS3231_I2C_ADDRESS 0x68
 
-#define TEST_DELAY   2000
+#define TEST_DELAY   500
 
 TM1637Display display(CLK, DIO);
 int photoResistorPin = 1;  //define a pin for Photo resistor
@@ -25,7 +25,7 @@ void setup()
 {
   pinMode(buttonMode, INPUT);
   Wire.begin();
-  dht.begin();
+
   Serial.begin(9600);
 display_mode = "temperature";
   
@@ -41,15 +41,19 @@ void loop()
 //if mode button is clicked - change mode.
 SetLEDBrightness();
 
+Serial.println("LOOP BEFORE btn click");
+
 ButtonClick();
 
-delay(TEST_DELAY);
+//delay(TEST_DELAY);
+Serial.println("LOOP after btn click");
 
   if (display_mode == "clock") {
     DisplayTime();
   } else {
     SetStatusOfDHT();
-    DisplayDHTInSerialMonitor();
+    DisplayDHT();
+
   }
 }
 
@@ -80,13 +84,13 @@ void SetLEDBrightness()
   if (photoResult > 600)
   {
     display.setBrightness(0x0d);
-    Serial.println("highlight");
+    //Serial.println("highlight");
   } else if (photoResult > 400) {
     display.setBrightness(0x08);
-    Serial.println("med_light");
+    //Serial.println("med_light");
   } else
   {
-    Serial.println("lowlight");
+    //Serial.println("lowlight");
     display.setBrightness(0x04);
   }
   //delay(250);
@@ -100,39 +104,51 @@ void SetStatusOfDHT()
   switch (chk)
   {
     case DHTLIB_OK:  
-    //Serial.print("OK,\t"); 
     break;
     case DHTLIB_ERROR_CHECKSUM: 
-    //Serial.print("Checksum error,\t"); 
     break;
     case DHTLIB_ERROR_TIMEOUT: 
-    //Serial.print("Time out error,\t"); 
     break;
     default: 
-    //Serial.print("Unknown error,\t"); 
     break;
   }
-  //delay(1000);
+  //delay(300);
 }
 
-void DisplayDHTInSerialMonitor()
+void DisplayDHT()
 {
     // DISPLAY DATA
-  Serial.print(DHT.humidity);
-  Serial.print(",\t");
-  Serial.println(DHT.temperature);
+  //Serial.print(DHT.humidity);
+  //Serial.print(",\t");
+  //Serial.println(DHT.temperature);
 
   
   int v = (int)DHT.temperature;
-  Serial.print("temmp:");
-  Serial.println(v);
+  //Serial.print("temmp:");
+  //Serial.println(v);
   int ones = v%10;
   v = v/10;
   int dec= v%10;
-  Serial.print("first digit");
-  Serial.println(dec);
-  Serial.print("second digit");
-  Serial.println(ones);
+  int whole_digit = dec * 10 + ones;
+
+  
+display.setColon(false);
+// Selectively set different digits
+  uint8_t data[4];// = { 0xff, 0xff, 0xff, 0xff };
+  data[0] = 0;
+  data[1] = 0;
+  data[2] = display.encodeDigit(dec);
+  data[3] = display.encodeDigit(ones);
+    display.setSegments(data, 4, 0);
+  
+  
+  //display.showNumberDec(whole_digit, false, 2, 2);
+  delay(TEST_DELAY);
+
+  //display.showNumberDec(dec, false, 2, 2);
+  //delay(TEST_DELAY);
+  //display.showNumberDec(ones, false, 2, 3);
+  //delay(TEST_DELAY);
 }
 
 void DisplayTime()
@@ -144,10 +160,10 @@ readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
 
   //num, leading zero, length, pos
   display.showNumberDec(hour, false, 2, 0);
-  delay(TEST_DELAY);
+  //delay(TEST_DELAY);
   
   display.showNumberDec(minute, false, 2, 2);
-  delay(TEST_DELAY);
+  //delay(TEST_DELAY);
 
 display.setColon(true);
 delay(TEST_DELAY);
