@@ -1,12 +1,11 @@
 #include "Wire.h"
 #include "Arduino.h"
 #include "TM1637Display.h"
-#include "DHT.h"
+#include <dht22.h>
 
-#define DHTTYPE DHT22
-#define DHTPIN 5
-DHT dht(DHTPIN, DHTTYPE);
-
+dht DHT;
+// DHT Sensor Setup
+#define DHT22_PIN 5 // We have connected the DHT to Digital Pin 2
 
 // Display connection pins (Digital Pins)
 #define CLK 8
@@ -49,6 +48,7 @@ delay(TEST_DELAY);
   if (display_mode == "clock") {
     DisplayTime();
   } else {
+    SetStatusOfDHT();
     DisplayDHTInSerialMonitor();
   }
 }
@@ -92,16 +92,38 @@ void SetLEDBrightness()
   //delay(250);
 }
 
+void SetStatusOfDHT()
+{
+    // READ DATA
+  //Serial.print("DHT22, \t");
+  int chk = DHT.read22(DHT22_PIN);
+  switch (chk)
+  {
+    case DHTLIB_OK:  
+    //Serial.print("OK,\t"); 
+    break;
+    case DHTLIB_ERROR_CHECKSUM: 
+    //Serial.print("Checksum error,\t"); 
+    break;
+    case DHTLIB_ERROR_TIMEOUT: 
+    //Serial.print("Time out error,\t"); 
+    break;
+    default: 
+    //Serial.print("Unknown error,\t"); 
+    break;
+  }
+  //delay(1000);
+}
 
 void DisplayDHTInSerialMonitor()
 {
     // DISPLAY DATA
-  Serial.print(dht.readHumidity());
+  Serial.print(DHT.humidity);
   Serial.print(",\t");
-  Serial.println(dht.readTemperature());
+  Serial.println(DHT.temperature);
 
   
-  int v = (int)dht.readTemperature();
+  int v = (int)DHT.temperature;
   Serial.print("temmp:");
   Serial.println(v);
   int ones = v%10;
