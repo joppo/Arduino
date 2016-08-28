@@ -16,10 +16,20 @@ const long dhtInterval = 700;
 const long brightnessInterval = 700;
 const long clockInterval = 700;
 const long modeBtnInterval = 250;
+const long clockBtnInterval = 250;
+
+unsigned long controlBrightnessTime = 0;
+unsigned long controlDHTTime = 0;
+unsigned long controlClockTime = 0;
+unsigned long controlModeBtnTime = 0;
+unsigned long controlHourBtnTime = 0;
+unsigned long controlMinuteBtnTime = 0;
 
 TM1637Display display(CLK, DIO);
 int photoResistorPin = 1;  //define a pin for Photo resistor
 int buttonMode = 13;
+int buttonHour = 12;
+int buttonMinute = 11;
 
 String display_mode;
 
@@ -29,7 +39,7 @@ void setup()
   Wire.begin();
 
   Serial.begin(9600);
-display_mode = "temperature";
+display_mode = "clock";
   
   // set the initial time here:
   // DS3231 seconds, minutes, hours, day, date, month, year
@@ -44,37 +54,89 @@ void loop()
 //delay(100);
 SetLEDBrightness();
 
-ButtonClick();
+ModeBtnClick();
+HourBtnClick();
+MinuteBtnClick();
 
   if (display_mode == "clock") {
     DisplayTime();
-  } else {
-    DisplayDHT();
-
+  } else if (display_mode == "temperature") {
+    DisplayDHT(display_mode);
+  } else if (display_mode == "humidity")
+  {
+    DisplayDHT(display_mode);
   }
 }
 
-unsigned long controlBrightnessTime = 0;
-unsigned long controlDHTTime = 0;
-unsigned long controlClockTime = 0;
-unsigned long controlModeBtnTime = 0;
+void HourBtnClick()
+{
+  unsigned long currentTime = millis();
+  if (currentTime - controlHourBtnTime >= clockBtnInterval)
+  {
+    controlHourBtnTime = currentTime;
 
+    int btn_hour_value = 0;
+    btn_hour_value = digitalRead(buttonHour);
 
-void ButtonClick()
+    //by default is LOW
+    if (btn_hour_value == HIGH) {
+      //get hour
+    byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+    readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
+    if (hour == 23)
+      hour = 0;
+    else
+      hour = hour + 1;
+      
+    //set hour with increment by 1
+    setDS3231time(second, minute, hour, dayOfWeek,dayOfMonth, month, year);
+    }
+  }
+}
+
+void MinuteBtnClick()
+{
+  unsigned long currentTime = millis();
+  if (currentTime - controlMinuteBtnTime >= clockBtnInterval)
+  {
+    controlMinuteBtnTime = currentTime;
+
+    int btn_minute_value = 0;
+    btn_minute_value = digitalRead(buttonMinute);
+
+    //by default is LOW
+    if (btn_minute_value == HIGH) {
+      //get minute
+    byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+    readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
+    if (minute == 59)
+      minute = 0;
+    else
+      minute = minute + 1;
+      
+    //set minute with increment by 1
+    setDS3231time(second, minute, hour, dayOfWeek,dayOfMonth, month, year);
+    }
+  }
+}
+
+void ModeBtnClick()
 {
   unsigned long currentTime = millis();
   if (currentTime - controlModeBtnTime >= modeBtnInterval)
   {
     controlModeBtnTime = currentTime;
-  Serial.println("reading button");
-  int btn_click_value = 0;
-  btn_click_value = digitalRead(buttonMode);
+  int btn_mode_value = 0;
+  btn_mode_value = digitalRead(buttonMode);
 
-//by default is LOW
-  if (btn_click_value == HIGH) {
+  //by default is LOW
+  if (btn_mode_value == HIGH) {
       if (display_mode == "clock") {
         display_mode = "temperature";
       } else if (display_mode == "temperature")
+      {
+        display_mode = "humidity";
+      } else if (display_mode == "humidity")
       {
         display_mode = "clock";
       }
@@ -88,42 +150,41 @@ void SetLEDBrightness()
   int photoResult = analogRead(photoResistorPin);
   uint8_t brightness_value = 0x0d; //default value
   
-  if (photoResult > 600)
+  if (photoResult > 800)
   {
     brightness_value = 0x0d;
-    //Serial.println("highlight");
+  } else if (photoResult > 700) {
+    brightness_value = 0x0c;
+  } else if (photoResult > 600) {
+    brightness_value = 0x0b;
+  } else if (photoResult > 500) {
+    brightness_value = 0x0a;
   } else if (photoResult > 400) {
+    brightness_value = 0x09;
+  } else if (photoResult > 300) {
     brightness_value = 0x08;
-    //Serial.println("med_light");
   } else
   {
-    //Serial.println("lowlight");
+    //below 300
     brightness_value = 0x08;
   }
   
   unsigned long currentTime = millis();
   if (currentTime - controlBrightnessTime >= brightnessInterval)
   {
-    Serial.println("brightnesssss");
     controlBrightnessTime = currentTime;
-    display.setBrightness(0x0d);
+    display.setBrightness(brightness_value);
   }
   
 }
 
-void DisplayDHT()
+//mode should contain "temperature" or "humidity"
+void DisplayDHT(String mode)
 {
   unsigned long currentTime = millis();
-
-  //Serial.print("currentTime:");
-  //Serial.print(currentTime);
-  //Serial.print("\tcontrolTime:");
-  //Serial.println(controlDHTTime);
   
   if (currentTime - controlDHTTime >= dhtInterval)
   {
-Serial.println("show dht");
-    
     controlDHTTime = currentTime;
 
     int chk = DHT.read22(DHT22_PIN);
@@ -139,20 +200,40 @@ Serial.println("show dht");
       default: 
       break;
     }
-    
-    int v = (int)DHT.temperature;
-    int ones = v%10;
-    v = v/10;
-    int dec= v%10;
-    int whole_digit = dec * 10 + ones;
 
     display.setColon(false);
-    // Selectively set different digits
-    uint8_t data[4];// = { 0xff, 0xff, 0xff, 0xff };
-    data[0] = 0;
-    data[1] = 0;
-    data[2] = display.encodeDigit(dec);
-    data[3] = display.encodeDigit(ones);
+    uint8_t data[4];
+      data[0] = 0;
+      data[1] = 0;
+
+    if (mode == "temperature") {
+      int v = (int)DHT.temperature;
+      int ones = v%10;
+      v = v/10;
+      int dec= v%10;
+  
+      // Selectively set different digits
+      if (dec == 0)
+        data[2] = 0;
+      else
+        data[2] = display.encodeDigit(dec);
+      data[3] = display.encodeDigit(ones);
+    } else {
+      int h = (int)DHT.humidity;
+      int ones = h%10;
+      h = h/10;
+      int dec = h%10;
+      
+      // Selectively set different digits
+      if (dec == 0)
+        data[2] = 0;
+      else
+        data[2] = display.encodeDigit(dec);
+      data[3] = display.encodeDigit(ones);
+      
+      Serial.print("Humidity:");
+      Serial.println(h);
+    }
     display.setSegments(data, 4, 0);
   }
     
@@ -160,23 +241,19 @@ Serial.println("show dht");
 
 void DisplayTime()
 {
-
-unsigned long currentTime = millis();
-if (currentTime - controlClockTime >= clockInterval)
+  unsigned long currentTime = millis();
+  if (currentTime - controlClockTime >= clockInterval)
   {
-Serial.println("display time");
-    
     controlClockTime = currentTime;
     
     byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
     readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
   
     //num, leading zero, length, pos
-    display.showNumberDec(hour, false, 2, 0);
-    display.showNumberDec(minute, false, 2, 2);
+    display.showNumberDec(hour, true, 2, 0);
+    display.showNumberDec(minute, true, 2, 2);
     display.setColon(true);
   }
-
 }
 
 
