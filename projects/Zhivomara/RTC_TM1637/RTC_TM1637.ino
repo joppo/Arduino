@@ -17,6 +17,7 @@ const long brightnessInterval = 700;
 const long clockInterval = 700;
 const long modeBtnInterval = 250;
 const long clockBtnInterval = 250;
+const long ledInterval = 250;
 
 unsigned long controlBrightnessTime = 0;
 unsigned long controlDHTTime = 0;
@@ -24,18 +25,27 @@ unsigned long controlClockTime = 0;
 unsigned long controlModeBtnTime = 0;
 unsigned long controlHourBtnTime = 0;
 unsigned long controlMinuteBtnTime = 0;
+unsigned long controlMinuteMinusBtnTime = 0;
+unsigned long ledTime = 0;
 
 TM1637Display display(CLK, DIO);
 int photoResistorPin = 1;  //define a pin for Photo resistor
 int buttonMode = 13;
 int buttonHour = 12;
 int buttonMinute = 11;
+int buttonMinuteMinus = 10;
+int greenLed = 2;
+int yellowLed = 3;
+int redLed = 4;
 
 String display_mode;
 
 void setup()
 {
   pinMode(buttonMode, INPUT);
+  pinMode(greenLed, OUTPUT);
+  pinMode(redLed, OUTPUT);
+  pinMode(yellowLed, OUTPUT);
   Wire.begin();
 
   Serial.begin(9600);
@@ -57,14 +67,42 @@ SetLEDBrightness();
 ModeBtnClick();
 HourBtnClick();
 MinuteBtnClick();
+MinuteMinusBtnClick();
 
   if (display_mode == "clock") {
     DisplayTime();
+    StartModeLeds(display_mode);
   } else if (display_mode == "temperature") {
     DisplayDHT(display_mode);
+    StartModeLeds(display_mode);
   } else if (display_mode == "humidity")
   {
     DisplayDHT(display_mode);
+    StartModeLeds(display_mode);
+  }
+}
+
+void StartModeLeds(String led_mode)
+{
+  unsigned long currentTime = millis();
+  if (currentTime - ledTime >= ledInterval)
+  {
+    ledTime = currentTime;
+    if (led_mode == "clock") {
+      digitalWrite(greenLed, HIGH);
+      digitalWrite(redLed, LOW);
+      digitalWrite(yellowLed, LOW);
+    } else if (led_mode == "temperature")
+    {
+      digitalWrite(greenLed, LOW);
+      digitalWrite(redLed, LOW);
+      digitalWrite(yellowLed, HIGH);
+    } else if (led_mode == "humidity")
+    {
+      digitalWrite(greenLed, LOW);
+      digitalWrite(redLed, HIGH);
+      digitalWrite(yellowLed, LOW);
+    }
   }
 }
 
@@ -113,6 +151,32 @@ void MinuteBtnClick()
       minute = 0;
     else
       minute = minute + 1;
+      
+    //set minute with increment by 1
+    setDS3231time(second, minute, hour, dayOfWeek,dayOfMonth, month, year);
+    }
+  }
+}
+
+void MinuteMinusBtnClick()
+{
+  unsigned long currentTime = millis();
+  if (currentTime - controlMinuteMinusBtnTime >= clockBtnInterval)
+  {
+    controlMinuteMinusBtnTime = currentTime;
+
+    int btn_minute_minus_value = 0;
+    btn_minute_minus_value = digitalRead(buttonMinuteMinus);
+
+    //by default is LOW
+    if (btn_minute_minus_value == HIGH) {
+      //get minute
+    byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+    readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
+    if (minute == 0)
+      minute = 59;
+    else
+      minute = minute - 1;
       
     //set minute with increment by 1
     setDS3231time(second, minute, hour, dayOfWeek,dayOfMonth, month, year);
