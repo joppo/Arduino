@@ -10,10 +10,12 @@ dht DHT;
 // Display connection pins (Digital Pins)
 #define CLK 8
 #define DIO 9
-
 #define DS3231_I2C_ADDRESS 0x68
 
-#define TEST_DELAY   500
+const long dhtInterval = 700;
+const long brightnessInterval = 700;
+const long clockInterval = 700;
+const long modeBtnInterval = 250;
 
 TM1637Display display(CLK, DIO);
 int photoResistorPin = 1;  //define a pin for Photo resistor
@@ -39,26 +41,32 @@ void loop()
 //if hour is clicked - increment hour
 //if minute is clicked - increment minute
 //if mode button is clicked - change mode.
+//delay(100);
 SetLEDBrightness();
 
-Serial.println("LOOP BEFORE btn click");
-
 ButtonClick();
-
-//delay(TEST_DELAY);
-Serial.println("LOOP after btn click");
 
   if (display_mode == "clock") {
     DisplayTime();
   } else {
-    SetStatusOfDHT();
     DisplayDHT();
 
   }
 }
 
+unsigned long controlBrightnessTime = 0;
+unsigned long controlDHTTime = 0;
+unsigned long controlClockTime = 0;
+unsigned long controlModeBtnTime = 0;
+
+
 void ButtonClick()
 {
+  unsigned long currentTime = millis();
+  if (currentTime - controlModeBtnTime >= modeBtnInterval)
+  {
+    controlModeBtnTime = currentTime;
+  Serial.println("reading button");
   int btn_click_value = 0;
   btn_click_value = digitalRead(buttonMode);
 
@@ -72,101 +80,102 @@ void ButtonClick()
       }
     
   }
+  }
 }
 
 void SetLEDBrightness()
 {
   int photoResult = analogRead(photoResistorPin);
-
-//Serial.print("PHOTORESISTOR:");
-//Serial.println(photoResult);
+  uint8_t brightness_value = 0x0d; //default value
   
   if (photoResult > 600)
   {
-    display.setBrightness(0x0d);
+    brightness_value = 0x0d;
     //Serial.println("highlight");
   } else if (photoResult > 400) {
-    display.setBrightness(0x08);
+    brightness_value = 0x08;
     //Serial.println("med_light");
   } else
   {
     //Serial.println("lowlight");
-    display.setBrightness(0x04);
+    brightness_value = 0x08;
   }
-  //delay(250);
-}
-
-void SetStatusOfDHT()
-{
-    // READ DATA
-  //Serial.print("DHT22, \t");
-  int chk = DHT.read22(DHT22_PIN);
-  switch (chk)
+  
+  unsigned long currentTime = millis();
+  if (currentTime - controlBrightnessTime >= brightnessInterval)
   {
-    case DHTLIB_OK:  
-    break;
-    case DHTLIB_ERROR_CHECKSUM: 
-    break;
-    case DHTLIB_ERROR_TIMEOUT: 
-    break;
-    default: 
-    break;
+    Serial.println("brightnesssss");
+    controlBrightnessTime = currentTime;
+    display.setBrightness(0x0d);
   }
-  //delay(300);
+  
 }
 
 void DisplayDHT()
 {
-    // DISPLAY DATA
-  //Serial.print(DHT.humidity);
-  //Serial.print(",\t");
-  //Serial.println(DHT.temperature);
+  unsigned long currentTime = millis();
 
+  //Serial.print("currentTime:");
+  //Serial.print(currentTime);
+  //Serial.print("\tcontrolTime:");
+  //Serial.println(controlDHTTime);
   
-  int v = (int)DHT.temperature;
-  //Serial.print("temmp:");
-  //Serial.println(v);
-  int ones = v%10;
-  v = v/10;
-  int dec= v%10;
-  int whole_digit = dec * 10 + ones;
+  if (currentTime - controlDHTTime >= dhtInterval)
+  {
+Serial.println("show dht");
+    
+    controlDHTTime = currentTime;
 
+    int chk = DHT.read22(DHT22_PIN);
   
-display.setColon(false);
-// Selectively set different digits
-  uint8_t data[4];// = { 0xff, 0xff, 0xff, 0xff };
-  data[0] = 0;
-  data[1] = 0;
-  data[2] = display.encodeDigit(dec);
-  data[3] = display.encodeDigit(ones);
+    switch (chk)
+    {
+      case DHTLIB_OK:  
+      break;
+      case DHTLIB_ERROR_CHECKSUM: 
+      break;
+      case DHTLIB_ERROR_TIMEOUT: 
+      break;
+      default: 
+      break;
+    }
+    
+    int v = (int)DHT.temperature;
+    int ones = v%10;
+    v = v/10;
+    int dec= v%10;
+    int whole_digit = dec * 10 + ones;
+
+    display.setColon(false);
+    // Selectively set different digits
+    uint8_t data[4];// = { 0xff, 0xff, 0xff, 0xff };
+    data[0] = 0;
+    data[1] = 0;
+    data[2] = display.encodeDigit(dec);
+    data[3] = display.encodeDigit(ones);
     display.setSegments(data, 4, 0);
-  
-  
-  //display.showNumberDec(whole_digit, false, 2, 2);
-  delay(TEST_DELAY);
-
-  //display.showNumberDec(dec, false, 2, 2);
-  //delay(TEST_DELAY);
-  //display.showNumberDec(ones, false, 2, 3);
-  //delay(TEST_DELAY);
+  }
+    
 }
 
 void DisplayTime()
 {
-  //display.setBrightness(0x0f);
 
-  byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
-readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
-
-  //num, leading zero, length, pos
-  display.showNumberDec(hour, false, 2, 0);
-  //delay(TEST_DELAY);
+unsigned long currentTime = millis();
+if (currentTime - controlClockTime >= clockInterval)
+  {
+Serial.println("display time");
+    
+    controlClockTime = currentTime;
+    
+    byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+    readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
   
-  display.showNumberDec(minute, false, 2, 2);
-  //delay(TEST_DELAY);
-
-display.setColon(true);
-delay(TEST_DELAY);
+    //num, leading zero, length, pos
+    display.showNumberDec(hour, false, 2, 0);
+    display.showNumberDec(minute, false, 2, 2);
+    display.setColon(true);
+  }
 
 }
 
