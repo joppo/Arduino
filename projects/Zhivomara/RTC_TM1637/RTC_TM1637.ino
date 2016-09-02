@@ -18,6 +18,9 @@ const long clockInterval = 700;
 const long modeBtnInterval = 250;
 const long clockBtnInterval = 250;
 const long ledInterval = 250;
+const long secondInterval = 1000;
+
+
 
 unsigned long controlBrightnessTime = 0;
 unsigned long controlDHTTime = 0;
@@ -27,6 +30,8 @@ unsigned long controlHourBtnTime = 0;
 unsigned long controlMinuteBtnTime = 0;
 unsigned long controlMinuteMinusBtnTime = 0;
 unsigned long ledTime = 0;
+unsigned long controlSecondTime = 0;
+
 
 TM1637Display display(CLK, DIO);
 int photoResistorPin = 1;  //define a pin for Photo resistor
@@ -49,7 +54,7 @@ void setup()
   Wire.begin();
 
   Serial.begin(9600);
-display_mode = "clock";
+  display_mode = "clock";
   
   // set the initial time here:
   // DS3231 seconds, minutes, hours, day, date, month, year
@@ -71,9 +76,11 @@ MinuteMinusBtnClick();
 
   if (display_mode == "clock") {
     DisplayTime();
+
     StartModeLeds(display_mode);
   } else if (display_mode == "temperature") {
     DisplayDHT(display_mode);
+
     StartModeLeds(display_mode);
   } else if (display_mode == "humidity")
   {
@@ -187,6 +194,7 @@ void MinuteMinusBtnClick()
 void ModeBtnClick()
 {
   unsigned long currentTime = millis();
+  
   if (currentTime - controlModeBtnTime >= modeBtnInterval)
   {
     controlModeBtnTime = currentTime;
@@ -265,30 +273,41 @@ void DisplayDHT(String mode)
       break;
     }
 
-    display.setColon(false);
     uint8_t data[4];
-      data[0] = 0;
-      data[1] = 0;
 
     if (mode == "temperature") {
-      int v = (int)DHT.temperature;
+      
+      display.setColon(false);
+      float wholeDigit = DHT.temperature;
+      int v = (int)wholeDigit;
+      int tens = ((int)(wholeDigit * 10)) % 10;
+      
       int ones = v%10;
       v = v/10;
       int dec= v%10;
   
       // Selectively set different digits
+      data[3] = display.encodeDigit(tens);
+      
+      //data[2] = SEG_C | SEG_D | SEG_E | SEG_G; //o
+      data[2] = SEG_D; //_
+      
       if (dec == 0)
-        data[2] = 0;
+        data[0] = 0;
       else
-        data[2] = display.encodeDigit(dec);
-      data[3] = display.encodeDigit(ones);
+        data[0] = display.encodeDigit(dec);
+      data[1] = display.encodeDigit(ones);
     } else {
+
+      display.setColon(false);
       int h = (int)DHT.humidity;
       int ones = h%10;
       h = h/10;
       int dec = h%10;
       
       // Selectively set different digits
+      data[0] = 0;
+      data[1] = 0;
       if (dec == 0)
         data[2] = 0;
       else
@@ -303,6 +322,7 @@ void DisplayDHT(String mode)
     
 }
 
+bool colonFlag = true;
 void DisplayTime()
 {
   unsigned long currentTime = millis();
@@ -316,7 +336,15 @@ void DisplayTime()
     //num, leading zero, length, pos
     display.showNumberDec(hour, true, 2, 0);
     display.showNumberDec(minute, true, 2, 2);
-    display.setColon(true);
+    //display.setColon(true);
+  }
+
+  if (currentTime - controlSecondTime >= secondInterval)
+  {
+    controlSecondTime = currentTime;
+    
+    display.setColon(colonFlag);
+    colonFlag = !colonFlag;
   }
 }
 
