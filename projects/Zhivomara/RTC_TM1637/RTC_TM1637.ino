@@ -18,7 +18,9 @@ const long clockInterval = 700;
 const long modeBtnInterval = 250;
 const long clockBtnInterval = 250;
 const long ledInterval = 250;
-const long secondInterval = 1000;
+const long secondInterval = 500;
+const long lowerInterval = 12000;
+const long higherInterval = 15000;
 
 
 
@@ -31,6 +33,8 @@ unsigned long controlMinuteBtnTime = 0;
 unsigned long controlMinuteMinusBtnTime = 0;
 unsigned long ledTime = 0;
 unsigned long controlSecondTime = 0;
+unsigned long secTimeLower = 0;
+unsigned long secTimeHigher = 0;
 
 
 TM1637Display display(CLK, DIO);
@@ -86,6 +90,34 @@ MinuteMinusBtnClick();
   {
     DisplayDHT(display_mode);
     StartModeLeds(display_mode);
+  }
+  EveryXSecLower();
+  EveryXSecHigher();
+}
+
+void EveryXSecLower()
+{
+  unsigned long currentTime = millis();
+  if (currentTime - secTimeLower >= lowerInterval)
+  {
+    secTimeLower = currentTime;
+    if (display_mode == "clock")
+        display_mode = "temperature";
+    else if (display_mode == "temperature")
+        display_mode = "clock";
+  }
+}
+
+void EveryXSecHigher()
+{
+  unsigned long currentTime = millis();
+  if (currentTime - secTimeHigher >= higherInterval)
+  {
+    secTimeHigher = currentTime;
+    if (display_mode == "temperature")
+        display_mode = "clock";
+    else if (display_mode == "clock")
+        display_mode = "temperature";
   }
 }
 
