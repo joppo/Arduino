@@ -31,6 +31,7 @@ void loop() {
   // write to the shift register with the correct bit set high:
     registerWrite(bitToSet, HIGH);
   }
+  //registerWrite(5, HIGH);
 }
 
 // This method sends bits to the shift register:
@@ -43,31 +44,91 @@ void registerWrite(int whichPin, int whichState) {
   // while you're shifting bits:
   digitalWrite(latchPin, LOW);
 Serial.println(whichPin);
-if (whichPin == 1)
+if (whichPin == 0)
 {
   Serial.println("Entered 1.");
-  bitWrite(bitsToSend, 1, HIGH);
-  bitWrite(bitsToSend, 6, HIGH);
+  bitWrite(bitsToSend, 0, LOW);
+  bitWrite(bitsToSend, 1, LOW);
+  bitWrite(bitsToSend, 2, LOW);
+  bitWrite(bitsToSend, 3, LOW);
+} else if (whichPin == 1) {
+  Serial.println("Entered 1.");
+  bitWrite(bitsToSend, 0, LOW);
+  bitWrite(bitsToSend, 1, LOW);
+  bitWrite(bitsToSend, 2, LOW);
+  bitWrite(bitsToSend, 3, HIGH);
 } else if (whichPin == 2) {
   Serial.println("Entered 2.");
+  bitWrite(bitsToSend, 0, LOW);
   bitWrite(bitsToSend, 1, LOW);
-  bitWrite(bitsToSend, 6, LOW);
+  bitWrite(bitsToSend, 2, HIGH);
+  bitWrite(bitsToSend, 3, LOW);
 } else if (whichPin == 3) {
   Serial.println("Entered 3.");
+  bitWrite(bitsToSend, 0, LOW);
   bitWrite(bitsToSend, 1, LOW);
-  bitWrite(bitsToSend, 6, HIGH);
-} else if (whichPin == 4) {
+  bitWrite(bitsToSend, 2, HIGH);
+  bitWrite(bitsToSend, 3, HIGH);
+}
+else if (whichPin == 4) {
   Serial.println("Entered 4.");
+  bitWrite(bitsToSend, 0, LOW);
   bitWrite(bitsToSend, 1, HIGH);
-  bitWrite(bitsToSend, 6, LOW);
+  bitWrite(bitsToSend, 2, LOW);
+  bitWrite(bitsToSend, 3, LOW);
+}
+else if (whichPin == 5) {
+  Serial.println("Entered 5.");
+  bitWrite(bitsToSend, 0, LOW);
+  bitWrite(bitsToSend, 1, HIGH);
+  bitWrite(bitsToSend, 2, LOW);
+  bitWrite(bitsToSend, 3, HIGH);
+}
+else if (whichPin == 6) {
+  Serial.println("Entered 6.");
+  bitWrite(bitsToSend, 0, LOW);
+  bitWrite(bitsToSend, 1, HIGH);
+  bitWrite(bitsToSend, 2, HIGH);
+  bitWrite(bitsToSend, 3, LOW);
+}
+else if (whichPin == 7) {
+  Serial.println("Entered 7.");
+  bitWrite(bitsToSend, 0, LOW);
+  bitWrite(bitsToSend, 1, HIGH);
+  bitWrite(bitsToSend, 2, HIGH);
+  bitWrite(bitsToSend, 3, HIGH);
+}
+else if (whichPin == 8) {
+  Serial.println("Entered 8.");
+  bitWrite(bitsToSend, 0, HIGH);
+  bitWrite(bitsToSend, 1, LOW);
+  bitWrite(bitsToSend, 2, LOW);
+  bitWrite(bitsToSend, 3, LOW);
+}
+else if (whichPin == 9) {
+  Serial.println("Entered 9.");
+  bitWrite(bitsToSend, 0, HIGH);
+  bitWrite(bitsToSend, 1, LOW);
+  bitWrite(bitsToSend, 2, LOW);
+  bitWrite(bitsToSend, 3, HIGH);
 }
 
   // turn on the next highest bit in bitsToSend:
   //bitWrite(bitsToSend, whichPin, whichState);
 Serial.print(bitsToSend);
   // shift the bits out:
-  shiftOut(dataPin, clockPin, MSBFIRST, bitsToSend);
+  //shiftOut(dataPin, clockPin, MSBFIRST, bitsToSend);
+  shiftOut(dataPin, clockPin, LSBFIRST, 135);
 
+ //for (x = 0; x<100; x++){ // count from 0 to 99
+    //nixies = charTable[x];
+    //Serial.println(nixies);
+    //delay(500);
+    //shiftOut(dataPin, clockPin, LSBFIRST, nixies);
+ //}
+  
+  
+//delay(500);
     // turn on the output so the LEDs can light up:
   digitalWrite(latchPin, HIGH);
 
