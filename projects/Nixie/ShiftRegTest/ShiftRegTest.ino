@@ -3,17 +3,11 @@
 int latchPin = 8;
 int clockPin = 12;
 int dataPin = 11;
-int x; //create a counting variable
 
 byte nixies = 255;
 
-int charTable[] = {0,128,64,192,32,160,96,224,16,144,8,136,72,200,40,168,104,232,24,152,4,132,68,196,36,164,100,228,20,148,12,140,76,204,44,
-172,108,236,28,156,2,130,66,194,34,162,98,226,
-18,146,10,138,74,202,42,170,106,234,26,154,6,134,70,198,38,166,102,230,22,150,14,142,78,206,46,174,110,238,30,158,1,129,
-65,193,33,161,97,225,17,145,9,137,73,201,41,169,105,233,25,153};
-
 void setup() {
-   pinMode(latchPin, OUTPUT);
+  pinMode(latchPin, OUTPUT);
   pinMode(dataPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   Serial.begin(9600);
@@ -21,115 +15,136 @@ void setup() {
 }
 
 void loop() {
-  if (Serial.available() > 0) {
+    byte b;
+    b = GetShiftByte(12);
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin, clockPin, MSBFIRST, b);
+    digitalWrite(latchPin, HIGH);
+    delay(4000);
+    
+    
+    SlotEffect();
+    //delay(5000);
+  
+  //if (Serial.available() > 0) {
     // ASCII '0' through '9' characters are
     // represented by the values 48 through 57.
     // so if the user types a number from 0 through 9 in ASCII, 
     // you can subtract 48 to get the actual value:
-    int bitToSet = Serial.read() - 48;
-
+    //int bitToSet = Serial.read() - 48;
+//SlotEffect();
   // write to the shift register with the correct bit set high:
-    registerWrite(bitToSet, HIGH);
-  }
+    //registerWrite(bitToSet, HIGH);
+    
+  //}
   //registerWrite(5, HIGH);
 }
 
 // This method sends bits to the shift register:
 
-void registerWrite(int whichPin, int whichState) {
-// the bits you want to send
-  byte bitsToSend = 0;
-
-  // turn off the output so the pins don't light up
-  // while you're shifting bits:
-  digitalWrite(latchPin, LOW);
-Serial.println(whichPin);
-if (whichPin == 0)
+void SlotEffect()
 {
-  Serial.println("Entered 1.");
-  bitWrite(bitsToSend, 0, LOW);
-  bitWrite(bitsToSend, 1, LOW);
-  bitWrite(bitsToSend, 2, LOW);
-  bitWrite(bitsToSend, 3, LOW);
-} else if (whichPin == 1) {
-  Serial.println("Entered 1.");
-  bitWrite(bitsToSend, 0, LOW);
-  bitWrite(bitsToSend, 1, LOW);
-  bitWrite(bitsToSend, 2, LOW);
-  bitWrite(bitsToSend, 3, HIGH);
-} else if (whichPin == 2) {
-  Serial.println("Entered 2.");
-  bitWrite(bitsToSend, 0, LOW);
-  bitWrite(bitsToSend, 1, LOW);
-  bitWrite(bitsToSend, 2, HIGH);
-  bitWrite(bitsToSend, 3, LOW);
-} else if (whichPin == 3) {
-  Serial.println("Entered 3.");
-  bitWrite(bitsToSend, 0, LOW);
-  bitWrite(bitsToSend, 1, LOW);
-  bitWrite(bitsToSend, 2, HIGH);
-  bitWrite(bitsToSend, 3, HIGH);
-}
-else if (whichPin == 4) {
-  Serial.println("Entered 4.");
-  bitWrite(bitsToSend, 0, LOW);
-  bitWrite(bitsToSend, 1, HIGH);
-  bitWrite(bitsToSend, 2, LOW);
-  bitWrite(bitsToSend, 3, LOW);
-}
-else if (whichPin == 5) {
-  Serial.println("Entered 5.");
-  bitWrite(bitsToSend, 0, LOW);
-  bitWrite(bitsToSend, 1, HIGH);
-  bitWrite(bitsToSend, 2, LOW);
-  bitWrite(bitsToSend, 3, HIGH);
-}
-else if (whichPin == 6) {
-  Serial.println("Entered 6.");
-  bitWrite(bitsToSend, 0, LOW);
-  bitWrite(bitsToSend, 1, HIGH);
-  bitWrite(bitsToSend, 2, HIGH);
-  bitWrite(bitsToSend, 3, LOW);
-}
-else if (whichPin == 7) {
-  Serial.println("Entered 7.");
-  bitWrite(bitsToSend, 0, LOW);
-  bitWrite(bitsToSend, 1, HIGH);
-  bitWrite(bitsToSend, 2, HIGH);
-  bitWrite(bitsToSend, 3, HIGH);
-}
-else if (whichPin == 8) {
-  Serial.println("Entered 8.");
-  bitWrite(bitsToSend, 0, HIGH);
-  bitWrite(bitsToSend, 1, LOW);
-  bitWrite(bitsToSend, 2, LOW);
-  bitWrite(bitsToSend, 3, LOW);
-}
-else if (whichPin == 9) {
-  Serial.println("Entered 9.");
-  bitWrite(bitsToSend, 0, HIGH);
-  bitWrite(bitsToSend, 1, LOW);
-  bitWrite(bitsToSend, 2, LOW);
-  bitWrite(bitsToSend, 3, HIGH);
+    for (int s = 2; s <= 9; s++)
+    {
+      int slot_n;
+      slot_n = s + s * 10;
+      byte b;
+      b = GetShiftByte(slot_n);
+      digitalWrite(latchPin, LOW);
+      shiftOut(dataPin, clockPin, MSBFIRST, b);
+      digitalWrite(latchPin, HIGH);
+      delay(50);
+    }
 }
 
-  // turn on the next highest bit in bitsToSend:
-  //bitWrite(bitsToSend, whichPin, whichState);
-Serial.print(bitsToSend);
-  // shift the bits out:
-  //shiftOut(dataPin, clockPin, MSBFIRST, bitsToSend);
-  shiftOut(dataPin, clockPin, LSBFIRST, 135);
-
- //for (x = 0; x<100; x++){ // count from 0 to 99
-    //nixies = charTable[x];
-    //Serial.println(nixies);
-    //delay(500);
-    //shiftOut(dataPin, clockPin, LSBFIRST, nixies);
- //}
+byte GetShiftByte(int n)
+{
+  byte b = 0;
+  int ones = n%10;
+  n = n/10;
+  int dec = n%10;
   
+  //Serial.print("ones:");
+  //Serial.println(ones);
+    //Serial.print("dec:");
+    //Serial.println(dec);
   
-//delay(500);
-    // turn on the output so the LEDs can light up:
-  digitalWrite(latchPin, HIGH);
-
+  b = GetSingleDigit(true, b, ones);
+  b = GetSingleDigit(false, b, dec);
+  return b;
 }
+byte GetSingleDigit(boolean isUnits, byte b, int n)
+{
+  int a_pos, b_pos, c_pos, d_pos;
+  //Serial.print("n:");Serial.println(n);
+  //Serial.print("isUnits:");Serial.println(isUnits);
+  if (isUnits) {
+    //Serial.println("is units = true");
+    a_pos = 0;
+    b_pos = 1;
+    c_pos = 2;
+    d_pos = 3;
+  } else {
+        //Serial.println("is units = false");
+    a_pos = 4;
+    b_pos = 5;
+    c_pos = 6;
+    d_pos = 7; 
+  }
+  
+  if (n == 0) {
+    bitWrite(b, a_pos, LOW);
+    bitWrite(b, b_pos, LOW);
+    bitWrite(b, c_pos, LOW);
+    bitWrite(b, d_pos, LOW); 
+  } else if (n == 1) {
+    bitWrite(b, a_pos, LOW);
+    bitWrite(b, b_pos, LOW);
+    bitWrite(b, c_pos, LOW);
+    bitWrite(b, d_pos, HIGH); 
+  } else if (n == 2) {
+    bitWrite(b, a_pos, LOW);
+    bitWrite(b, b_pos, LOW);
+    bitWrite(b, c_pos, HIGH);
+    bitWrite(b, d_pos, LOW); 
+  } else if (n == 3) {
+    bitWrite(b, a_pos, LOW);
+    bitWrite(b, b_pos, LOW);
+    bitWrite(b, c_pos, HIGH);
+    bitWrite(b, d_pos, HIGH);
+  } else if (n == 4) {
+    bitWrite(b, a_pos, LOW);
+    bitWrite(b, b_pos, HIGH);
+    bitWrite(b, c_pos, LOW);
+    bitWrite(b, d_pos, LOW);
+  } else if (n == 5) {
+    bitWrite(b, a_pos, LOW);
+    bitWrite(b, b_pos, HIGH);
+    bitWrite(b, c_pos, LOW);
+    bitWrite(b, d_pos, HIGH);
+  } else if (n == 6) {
+    bitWrite(b, a_pos, LOW);
+    bitWrite(b, b_pos, HIGH);
+    bitWrite(b, c_pos, HIGH);
+    bitWrite(b, d_pos, LOW);
+  } else if (n == 7) {
+    bitWrite(b, a_pos, LOW);
+    bitWrite(b, b_pos, HIGH);
+    bitWrite(b, c_pos, HIGH);
+    bitWrite(b, d_pos, HIGH);
+  } else if (n == 8) {
+    bitWrite(b, a_pos, HIGH);
+    bitWrite(b, b_pos, LOW);
+    bitWrite(b, c_pos, LOW);
+    bitWrite(b, d_pos, LOW);
+  } else if (n == 9) {
+    bitWrite(b, a_pos, HIGH);
+    bitWrite(b, b_pos, LOW);
+    bitWrite(b, c_pos, LOW);
+    bitWrite(b, d_pos, HIGH);
+  }
+
+  return b;
+}
+
+
