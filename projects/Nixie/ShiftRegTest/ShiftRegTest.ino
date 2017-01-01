@@ -1,26 +1,61 @@
+#include "Arduino.h"
+#include <dht22.h>
 
+//BEGIN ShiftOut Stuff
 //set up the pins for communication with the shift register
-int latchPin = 8;
-int clockPin = 12;
-int dataPin = 11;
+int latchPin_h = 8;
+int clockPin_h = 12;
+int dataPin_h = 11;
+
+int latchPin_m = 9;
+int clockPin_m = 10;
+int dataPin_m = 13;
+//END ShiftOut Stuff
+
+//BEGIN DHT22
+dht DHT;
+#define DHT22_PIN 5 // We have connected the DHT to Digital Pin 2
+//END DHT22
+
+//BEGIN PIR
+int inputPIRPin = 4;
+int pirState = LOW; // we start, assuming no motion detected
+//END PIR
+
 
 byte nixies = 255;
 
 void setup() {
-  pinMode(latchPin, OUTPUT);
-  pinMode(dataPin, OUTPUT);
-  pinMode(clockPin, OUTPUT);
+  pinMode(latchPin_h, OUTPUT);
+  pinMode(dataPin_h, OUTPUT);
+  pinMode(clockPin_h, OUTPUT);
+  
+  pinMode(latchPin_m, OUTPUT);
+  pinMode(dataPin_m, OUTPUT);
+  pinMode(clockPin_m, OUTPUT);
+  
+  pinMode(inputPIRPin, INPUT);     // declare PIR port as input
+
   Serial.begin(9600);
 
 }
 
 void loop() {
+    boolean pirActive = ReadPIR();
+    Serial.print("PIR:");
+    Serial.println(pirActive);
+    int n_ToDisplay;
+    //n_ToDisplay = 12;
+    int test = ReadDHT();
+    //Serial.print("temp:");
+    //Serial.println(test);
+    n_ToDisplay = ReadDHT();
     byte b;
-    b = GetShiftByte(12);
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, MSBFIRST, b);
-    digitalWrite(latchPin, HIGH);
-    delay(4000);
+    b = GetShiftByte(n_ToDisplay);
+    digitalWrite(latchPin_h, LOW);
+    shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
+    digitalWrite(latchPin_h, HIGH);
+    delay(2000);
     
     
     SlotEffect();
@@ -42,6 +77,42 @@ void loop() {
 
 // This method sends bits to the shift register:
 
+boolean ReadPIR()
+{
+    int pirVal = 0;
+   pirVal = digitalRead(inputPIRPin);
+   Serial.print(pirVal);
+   if (pirVal == HIGH)
+   {
+        Serial.println("  true");
+      return true; 
+   } else {
+             Serial.println("  false");
+      return false; 
+   }
+}
+
+int ReadDHT()
+{
+    int chk = DHT.read22(DHT22_PIN);
+  
+    switch (chk)
+    {
+      case DHTLIB_OK:  
+      break;
+      case DHTLIB_ERROR_CHECKSUM: 
+      break;
+      case DHTLIB_ERROR_TIMEOUT: 
+      break;
+      default: 
+      break;
+    }
+    uint8_t data[4]; 
+    float wholeDigit = DHT.temperature;
+    int v = (int)wholeDigit;
+    return v;
+}
+
 void SlotEffect()
 {
     for (int s = 2; s <= 9; s++)
@@ -50,9 +121,14 @@ void SlotEffect()
       slot_n = s + s * 10;
       byte b;
       b = GetShiftByte(slot_n);
-      digitalWrite(latchPin, LOW);
-      shiftOut(dataPin, clockPin, MSBFIRST, b);
-      digitalWrite(latchPin, HIGH);
+      digitalWrite(latchPin_h, LOW);
+      shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
+      digitalWrite(latchPin_h, HIGH);
+
+      digitalWrite(latchPin_m, LOW);
+      shiftOut(dataPin_m, clockPin_m, MSBFIRST, b);
+      digitalWrite(latchPin_m, HIGH);
+
       delay(50);
     }
 }
