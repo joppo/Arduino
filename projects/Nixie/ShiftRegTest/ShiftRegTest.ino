@@ -2,7 +2,7 @@
 #include <dht22.h>
 
 //BEGIN NOT CONCLUSIVE
-const int switchBtnPIN = 2;
+const int switchBtnPIN = 3;
 //END NOT CONCLUSIVE
 
 //BEGIN ShiftOut Stuff
