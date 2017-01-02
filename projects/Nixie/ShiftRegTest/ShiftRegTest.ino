@@ -1,6 +1,10 @@
 #include "Arduino.h"
 #include <dht22.h>
 
+//BEGIN NOT CONCLUSIVE
+const int switchBtnPIN = 2;
+//END NOT CONCLUSIVE
+
 //BEGIN ShiftOut Stuff
 //set up the pins for communication with the shift register
 int latchPin_h = 8;
@@ -26,6 +30,8 @@ int pirState = LOW; // we start, assuming no motion detected
 byte nixies = 255;
 
 void setup() {
+  pinMode(switchBtnPIN, OUTPUT);
+  
   pinMode(latchPin_h, OUTPUT);
   pinMode(dataPin_h, OUTPUT);
   pinMode(clockPin_h, OUTPUT);
@@ -41,24 +47,38 @@ void setup() {
 }
 
 void loop() {
+    int switchBtnState = digitalRead(switchBtnPIN);
+    if (switchBtnState == HIGH)
+    {
+      Serial.println("btn pressed");
+    } else
+    {
+      Serial.println("btn NOT pressed");      
+    }
+  
     boolean pirActive = ReadPIR();
-    Serial.print("PIR:");
-    Serial.println(pirActive);
-    int n_ToDisplay;
-    //n_ToDisplay = 12;
-    int test = ReadDHT();
-    //Serial.print("temp:");
-    //Serial.println(test);
-    n_ToDisplay = ReadDHT();
-    byte b;
-    b = GetShiftByte(n_ToDisplay);
-    digitalWrite(latchPin_h, LOW);
-    shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
-    digitalWrite(latchPin_h, HIGH);
+    //Serial.print("PIR:");
+    //Serial.println(pirActive);
+    if (pirActive == 0)
+    {
+     TurnOffTubes(); 
+    } else {
+      int n_ToDisplay;
+      n_ToDisplay = ReadDHT();
+      byte b;
+      b = GetShiftByte(n_ToDisplay);
+      Serial.println(n_ToDisplay);
+      digitalWrite(latchPin_h, LOW);
+      shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
+      digitalWrite(latchPin_h, HIGH);
+      SlotEffect();
+    }
+    
     delay(2000);
     
     
-    SlotEffect();
+    
+
     //delay(5000);
   
   //if (Serial.available() > 0) {
@@ -75,19 +95,27 @@ void loop() {
   //registerWrite(5, HIGH);
 }
 
+void TurnOffTubes()
+{
+    byte b = GetEmptyByte();
+    digitalWrite(latchPin_h, LOW);
+    shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
+    digitalWrite(latchPin_h, HIGH);
+}
+
 // This method sends bits to the shift register:
 
 boolean ReadPIR()
 {
     int pirVal = 0;
    pirVal = digitalRead(inputPIRPin);
-   Serial.print(pirVal);
+   //Serial.print(pirVal);
    if (pirVal == HIGH)
    {
-        Serial.println("  true");
+      //Serial.println("  true");
       return true; 
    } else {
-             Serial.println("  false");
+      //Serial.println("  false");
       return false; 
    }
 }
@@ -149,6 +177,21 @@ byte GetShiftByte(int n)
   b = GetSingleDigit(false, b, dec);
   return b;
 }
+
+byte GetEmptyByte()
+{
+ byte b;
+     bitWrite(b, 0, HIGH);
+     bitWrite(b, 1, HIGH);
+     bitWrite(b, 2, HIGH);
+     bitWrite(b, 3, HIGH);
+     bitWrite(b, 4, HIGH);
+     bitWrite(b, 5, HIGH);
+     bitWrite(b, 6, HIGH);
+     bitWrite(b, 7, HIGH);
+     return b;
+}
+
 byte GetSingleDigit(boolean isUnits, byte b, int n)
 {
   int a_pos, b_pos, c_pos, d_pos;
