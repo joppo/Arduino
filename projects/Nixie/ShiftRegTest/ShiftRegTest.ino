@@ -1,13 +1,26 @@
 #include "Arduino.h"
 #include <dht22.h>
+#include "Wire.h"
+
+//I2C
+#define DS3231_I2C_ADDRESS 0x68
+//END I2C
 
 //BEGIN NOT CONCLUSIVE
 const int switchBtnPIN = 3;
 //END NOT CONCLUSIVE
 
-//BEGIN Yellow LED 1 pin
-const int ledPIN = 14; //analogue pin 0
-//END Yellow LED 1 pin
+//Button pins
+const int buttonMode = 14; //analogue pin 0
+int buttonHour = 15; //analogue pin 1
+int buttonMinute = 16; //analogue pin 2
+int buttonMinuteMinus = 17; //analogue pin 3
+//END Button pins
+
+//LED pins
+int ledClock = 1;
+int ledTemperature = 2;
+//END LED pins
 
 //BEGIN ShiftOut Stuff
 //set up the pins for communication with the shift register
@@ -30,13 +43,23 @@ int inputPIRPin = 4;
 int pirState = LOW; // we start, assuming no motion detected
 //END PIR
 
-
 byte nixies = 255;
 
+//Control VARS
+unsigned long controlHourBtnTime = 0;
+unsigned long controlMinuteBtnTime = 0;
+unsigned long controlMinuteMinusBtnTime = 0;
+//END Control VARS
+
+//Interval VARS
+const long clockBtnInterval = 250;
+//END Interval VARS
+
 void setup() {
-
-  pinMode(ledPIN,OUTPUT); 
-
+  Wire.begin();
+  pinMode(ledClock,OUTPUT);
+  pinMode(ledTemperature,OUTPUT);
+  
   pinMode(switchBtnPIN, OUTPUT);
 
   pinMode(latchPin_h, OUTPUT);
@@ -55,7 +78,15 @@ void setup() {
 
 void loop() {
 
-  digitalWrite(ledPIN, HIGH);
+  //begin test Clock
+  byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+  readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
+  //end test clock
+  Serial.print("hour:minute -> ");
+  Serial.print(hour);
+  Serial.print(":");
+  Serial.println(minute);
+
 
   int switchBtnState = digitalRead(switchBtnPIN);
   if (switchBtnState == HIGH)
@@ -131,6 +162,133 @@ boolean ReadPIR()
     //Serial.println("  false");
     return false; 
   }
+}
+
+void HourBtnClick()
+{
+  unsigned long currentTime = millis();
+  if (currentTime - controlHourBtnTime >= clockBtnInterval)
+  {
+    controlHourBtnTime = currentTime;
+
+    int btn_hour_value = 0;
+    btn_hour_value = digitalRead(buttonHour);
+
+    //by default is LOW
+    if (btn_hour_value == HIGH) {
+      //get hour
+    byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+    readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
+    if (hour == 23)
+      hour = 0;
+    else
+      hour = hour + 1;
+      
+    //set hour with increment by 1
+    setDS3231time(second, minute, hour, dayOfWeek,dayOfMonth, month, year);
+    }
+  }
+}
+
+void MinuteBtnClick()
+{
+  unsigned long currentTime = millis();
+  if (currentTime - controlMinuteBtnTime >= clockBtnInterval)
+  {
+    controlMinuteBtnTime = currentTime;
+
+    int btn_minute_value = 0;
+    btn_minute_value = digitalRead(buttonMinute);
+
+    //by default is LOW
+    if (btn_minute_value == HIGH) {
+      //get minute
+    byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+    readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
+    if (minute == 59)
+      minute = 0;
+    else
+      minute = minute + 1;
+      
+    //set minute with increment by 1
+    setDS3231time(second, minute, hour, dayOfWeek,dayOfMonth, month, year);
+    }
+  }
+}
+
+void MinuteMinusBtnClick()
+{
+  unsigned long currentTime = millis();
+  if (currentTime - controlMinuteMinusBtnTime >= clockBtnInterval)
+  {
+    controlMinuteMinusBtnTime = currentTime;
+
+    int btn_minute_minus_value = 0;
+    btn_minute_minus_value = digitalRead(buttonMinuteMinus);
+
+    //by default is LOW
+    if (btn_minute_minus_value == HIGH) {
+      //get minute
+    byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+    readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
+    if (minute == 0)
+      minute = 59;
+    else
+      minute = minute - 1;
+      
+    //set minute with increment by 1
+    setDS3231time(second, minute, hour, dayOfWeek,dayOfMonth, month, year);
+    }
+  }
+}
+
+void setDS3231time(byte second, byte minute, byte hour, byte dayOfWeek, byte
+                   dayOfMonth, byte month, byte year)
+{
+  // sets time and date data to DS3231
+  Wire.beginTransmission(DS3231_I2C_ADDRESS);
+  Wire.write(0); // set next input to start at the seconds register
+  Wire.write(decToBcd(second)); // set seconds
+  Wire.write(decToBcd(minute)); // set minutes
+  Wire.write(decToBcd(hour)); // set hours
+  Wire.write(decToBcd(dayOfWeek)); // set day of week (1=Sunday, 7=Saturday)
+  Wire.write(decToBcd(dayOfMonth)); // set date (1 to 31)
+  Wire.write(decToBcd(month)); // set month
+  Wire.write(decToBcd(year)); // set year (0 to 99)
+  Wire.endTransmission();
+}
+
+void readDS3231time(byte *second,
+                    byte *minute,
+                    byte *hour,
+                    byte *dayOfWeek,
+                    byte *dayOfMonth,
+                    byte *month,
+                    byte *year)
+{
+  Wire.beginTransmission(DS3231_I2C_ADDRESS);
+  Wire.write(0); // set DS3231 register pointer to 00h
+  Wire.endTransmission();
+  Wire.requestFrom(DS3231_I2C_ADDRESS, 7);
+  // request seven bytes of data from DS3231 starting from register 00h
+  *second = bcdToDec(Wire.read() & 0x7f);
+  *minute = bcdToDec(Wire.read());
+  *hour = bcdToDec(Wire.read() & 0x3f);
+  *dayOfWeek = bcdToDec(Wire.read());
+  *dayOfMonth = bcdToDec(Wire.read());
+  *month = bcdToDec(Wire.read());
+  *year = bcdToDec(Wire.read());
+}
+
+// Convert normal decimal numbers to binary coded decimal
+byte decToBcd(byte val)
+{
+  return ( (val / 10 * 16) + (val % 10) );
+}
+// Convert binary coded decimal to normal decimal numbers
+byte bcdToDec(byte val)
+{
+  return ( (val / 16 * 10) + (val % 16) );
 }
 
 int ReadDHT()
