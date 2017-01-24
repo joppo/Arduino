@@ -57,7 +57,8 @@ void setup()
   pinMode(yellowLed, OUTPUT);
   Wire.begin();
 
-  Serial.begin(9600);
+  //Serial.begin(9600);
+  Serial.begin(115200);
   display_mode = "clock";
   
   // set the initial time here:
@@ -91,8 +92,8 @@ MinuteMinusBtnClick();
     DisplayDHT(display_mode);
     StartModeLeds(display_mode);
   }
-  EveryXSecLower();
-  EveryXSecHigher();
+  //EveryXSecLower();
+  //EveryXSecHigher();
 }
 
 void EveryXSecLower()
@@ -103,8 +104,8 @@ void EveryXSecLower()
     secTimeLower = currentTime;
     if (display_mode == "clock")
         display_mode = "temperature";
-    else if (display_mode == "temperature")
-        display_mode = "clock";
+    //else if (display_mode == "temperature")
+    //    display_mode = "clock";
   }
 }
 
@@ -116,8 +117,8 @@ void EveryXSecHigher()
     secTimeHigher = currentTime;
     if (display_mode == "temperature")
         display_mode = "clock";
-    else if (display_mode == "clock")
-        display_mode = "temperature";
+    //else if (display_mode == "clock")
+    //    display_mode = "temperature";
   }
 }
 
