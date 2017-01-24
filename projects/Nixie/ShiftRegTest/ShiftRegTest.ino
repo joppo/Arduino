@@ -6,15 +6,10 @@
 #define DS3231_I2C_ADDRESS 0x68
 //END I2C
 
-//BEGIN NOT CONCLUSIVE
-const int switchBtnPIN = 3;
-//END NOT CONCLUSIVE
-
 //Button pins
 const int buttonMode = 14; //analogue pin 0
-int buttonHour = 15; //analogue pin 1
-int buttonMinute = 16; //analogue pin 2
-int buttonMinuteMinus = 17; //analogue pin 3
+const int buttonHour = 15; //analogue pin 1
+const int buttonMinute = 16; //analogue pin 2
 //END Button pins
 
 //LED pins
@@ -60,7 +55,9 @@ void setup() {
   pinMode(ledClock,OUTPUT);
   pinMode(ledTemperature,OUTPUT);
   
-  pinMode(switchBtnPIN, OUTPUT);
+  pinMode(buttonMode, INPUT_PULLUP);
+  pinMode(buttonHour, INPUT_PULLUP);
+  pinMode(buttonMinute, INPUT_PULLUP);
 
   pinMode(latchPin_h, OUTPUT);
   pinMode(dataPin_h, OUTPUT);
@@ -86,17 +83,11 @@ void loop() {
   Serial.print(hour);
   Serial.print(":");
   Serial.println(minute);
+  
+  int btnHourState = digitalRead(buttonHour);
+  Serial.print("HOURRRRR:");
+  Serial.println(btnHourState);
 
-
-  int switchBtnState = digitalRead(switchBtnPIN);
-  if (switchBtnState == HIGH)
-  {
-    Serial.println("btn pressed");
-  } 
-  else
-  {
-    Serial.println("btn NOT pressed");      
-  }
 
   boolean pirActive = ReadPIR();
   //Serial.print("PIR:");
@@ -106,11 +97,24 @@ void loop() {
     TurnOffTubes(); 
   } 
   else {
+    
+    int buttonModeResult = digitalRead(buttonMode);
+    if (buttonModeResult == HIGH)
+    {
+      //Enter Temperature Mode
+      Serial.println("btn pressed");
+    } 
+    else
+    {
+      //Enter Clock Mode
+      Serial.println("btn NOT pressed");      
+    }
+    
     int n_ToDisplay;
     n_ToDisplay = ReadDHT();
     byte b;
     b = GetShiftByte(n_ToDisplay);
-    Serial.println(n_ToDisplay);
+    //Serial.println(n_ToDisplay);
     digitalWrite(latchPin_h, LOW);
     shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
     digitalWrite(latchPin_h, HIGH);
