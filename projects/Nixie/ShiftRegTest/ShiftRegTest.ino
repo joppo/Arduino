@@ -12,6 +12,10 @@ const int buttonHour = 15; //analogue pin 1
 const int buttonMinute = 16; //analogue pin 2
 //END Button pins
 
+String clock_mode = "clock";
+int number_AB_ToDisplay;
+int number_CD_ToDisplay;
+
 //LED pins
 int ledClock = 1;
 int ledTemperature = 2;
@@ -41,13 +45,19 @@ int pirState = LOW; // we start, assuming no motion detected
 byte nixies = 255;
 
 //Control VARS
+unsigned long controlClockBtnTime = 0
 unsigned long controlHourBtnTime = 0;
 unsigned long controlMinuteBtnTime = 0;
-unsigned long controlMinuteMinusBtnTime = 0;
+unsigned long controlReadClockTime = 0;
+unsigned long controlReadDHTtime = 0;
 //END Control VARS
 
 //Interval VARS
-const long clockBtnInterval = 250;
+const long clockBtnInterval = 500;
+const long hourBtnInterval = 250;
+const long minuteBtnInterval = 250;
+const long readClockInterval = 700;
+const long readDHTInterval = 700;
 //END Interval VARS
 
 void setup() {
@@ -74,57 +84,37 @@ void setup() {
 }
 
 void loop() {
-
-  //begin test Clock
-  byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
-  readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
-  //end test clock
-  Serial.print("hour:minute -> ");
-  Serial.print(hour);
-  Serial.print(":");
-  Serial.println(minute);
   
-  int btnHourState = digitalRead(buttonHour);
-  Serial.print("HOURRRRR:");
-  Serial.println(btnHourState);
-
-
   boolean pirActive = ReadPIR();
-  //Serial.print("PIR:");
-  //Serial.println(pirActive);
   if (pirActive == 0)
   {
     TurnOffTubes(); 
   } 
   else {
     
-    int buttonModeResult = digitalRead(buttonMode);
-    if (buttonModeResult == HIGH)
+    //We display the tubes
+    ClockModeClick();
+    HourBtnClick();
+    MinuteBtnClick();
+    
+    
+    if (clock_mode == "clock")
     {
-      //Enter Temperature Mode
-      Serial.println("btn pressed");
-    } 
-    else
-    {
-      //Enter Clock Mode
-      Serial.println("btn NOT pressed");      
+      ReadTime();
+      
+    } else {
+      ReadDHT();    
     }
     
-    int n_ToDisplay;
-    n_ToDisplay = ReadDHT();
     byte b;
-    b = GetShiftByte(n_ToDisplay);
-    //Serial.println(n_ToDisplay);
+    b = GetShiftByte(number_CD_ToDisplay);
     digitalWrite(latchPin_h, LOW);
     shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
     digitalWrite(latchPin_h, HIGH);
     SlotEffect();
   }
 
-  delay(2000);
-
-
-
+  delay(500);
 
   //delay(5000);
 
@@ -140,6 +130,30 @@ void loop() {
 
   //}
   //registerWrite(5, HIGH);
+}
+
+void ReadDHT()
+{
+  //begin read DHT
+  unsigned long currentTime = millis();
+  if (currentTime - controlReadDHTtime >= readDHTInterval)
+  {
+    controlReadDHTtime = currentTime;
+    number_CD_ToDisplay = ReadDHT();
+}
+
+void ReadTime()
+{
+  //begin read Clock
+  unsigned long currentTime = millis();
+  if (currentTime - controlReadClockTime >= readClockInterval)
+  {
+    controlReadClockTime = currentTime;
+    byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+    readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
+    number_AB_ToDisplay = hour;
+    number_CD_ToDisplay = minute;
+  }
 }
 
 void TurnOffTubes()
@@ -171,7 +185,7 @@ boolean ReadPIR()
 void HourBtnClick()
 {
   unsigned long currentTime = millis();
-  if (currentTime - controlHourBtnTime >= clockBtnInterval)
+  if (currentTime - controlHourBtnTime >= hourBtnInterval)
   {
     controlHourBtnTime = currentTime;
 
@@ -194,10 +208,33 @@ void HourBtnClick()
   }
 }
 
+void ClockModeClick()
+{
+  unsigned long currentTime = millis();
+  if (currentTime - controlClockBtnTime >= clockBtnInterval)
+  {
+    controlClockBtnTime = currentTime;
+    
+    int buttonModeResult = digitalRead(buttonMode);
+    if (buttonModeResult == HIGH)
+    {
+      //Enter Temperature Mode
+      clock_mode = "clock";
+      Serial.println("Clock mode");
+    } 
+    else
+    {
+      //Enter Clock Mode
+      clock_mode = "temperature";
+      Serial.println("temp mode");      
+    }
+  }
+}
+
 void MinuteBtnClick()
 {
   unsigned long currentTime = millis();
-  if (currentTime - controlMinuteBtnTime >= clockBtnInterval)
+  if (currentTime - controlMinuteBtnTime >= minuteBtnInterval)
   {
     controlMinuteBtnTime = currentTime;
 
@@ -213,32 +250,6 @@ void MinuteBtnClick()
       minute = 0;
     else
       minute = minute + 1;
-      
-    //set minute with increment by 1
-    setDS3231time(second, minute, hour, dayOfWeek,dayOfMonth, month, year);
-    }
-  }
-}
-
-void MinuteMinusBtnClick()
-{
-  unsigned long currentTime = millis();
-  if (currentTime - controlMinuteMinusBtnTime >= clockBtnInterval)
-  {
-    controlMinuteMinusBtnTime = currentTime;
-
-    int btn_minute_minus_value = 0;
-    btn_minute_minus_value = digitalRead(buttonMinuteMinus);
-
-    //by default is LOW
-    if (btn_minute_minus_value == HIGH) {
-      //get minute
-    byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
-    readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
-    if (minute == 0)
-      minute = 59;
-    else
-      minute = minute - 1;
       
     //set minute with increment by 1
     setDS3231time(second, minute, hour, dayOfWeek,dayOfMonth, month, year);
