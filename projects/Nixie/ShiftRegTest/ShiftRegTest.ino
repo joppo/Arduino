@@ -17,8 +17,8 @@ int number_AB_ToDisplay;
 int number_CD_ToDisplay;
 
 //LED pins
-int ledClock = 1;
-int ledTemperature = 2;
+int ledClock = 2;
+int ledTemperature = 3;
 //END LED pins
 
 //BEGIN ShiftOut Stuff
@@ -45,11 +45,12 @@ int pirState = LOW; // we start, assuming no motion detected
 byte nixies = 255;
 
 //Control VARS
-unsigned long controlClockBtnTime = 0
+unsigned long controlClockBtnTime = 0;
 unsigned long controlHourBtnTime = 0;
 unsigned long controlMinuteBtnTime = 0;
 unsigned long controlReadClockTime = 0;
 unsigned long controlReadDHTtime = 0;
+unsigned long controlPIRBtnTime = 0;
 //END Control VARS
 
 //Interval VARS
@@ -58,7 +59,14 @@ const long hourBtnInterval = 250;
 const long minuteBtnInterval = 250;
 const long readClockInterval = 700;
 const long readDHTInterval = 700;
+const long pIRBtnInterval = 700;
 //END Interval VARS
+
+boolean pirActive;
+
+//value is in seconds
+const unsigned int pIR_Timeout = 60;
+unsigned long pIR_CurrentTime = 0;
 
 void setup() {
   Wire.begin();
@@ -85,10 +93,10 @@ void setup() {
 
 void loop() {
   
-  boolean pirActive = ReadPIR();
+  pirActive = ReadPIR();
   if (pirActive == 0)
   {
-    TurnOffTubes(); 
+    TurnOffClock();
   } 
   else {
     
@@ -100,18 +108,12 @@ void loop() {
     
     if (clock_mode == "clock")
     {
-      ReadTime();
+      DisplayTime();
       
     } else {
-      ReadDHT();    
+      DisplayDHT();    
     }
     
-    byte b;
-    b = GetShiftByte(number_CD_ToDisplay);
-    digitalWrite(latchPin_h, LOW);
-    shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
-    digitalWrite(latchPin_h, HIGH);
-    SlotEffect();
   }
 
   delay(500);
@@ -132,7 +134,25 @@ void loop() {
   //registerWrite(5, HIGH);
 }
 
-void ReadDHT()
+void DisplayDigits(unsigned int ab, unsigned int cd, bool displayFourDigits)
+{
+  byte b;
+  if (displayFourDigits)
+  {
+    b = GetShiftByte(ab);
+    digitalWrite(latchPin_h, LOW);
+    shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
+    digitalWrite(latchPin_h, HIGH);
+  }
+  
+  b = GetShiftByte(cd);
+  digitalWrite(latchPin_m, LOW);
+  shiftOut(dataPin_m, clockPin_m, MSBFIRST, b);
+  digitalWrite(latchPin_m, HIGH);
+  //SlotEffect();
+}
+
+void DisplayDHT()
 {
   //begin read DHT
   unsigned long currentTime = millis();
@@ -140,9 +160,16 @@ void ReadDHT()
   {
     controlReadDHTtime = currentTime;
     number_CD_ToDisplay = ReadDHT();
+
+    digitalWrite(ledTemperature,HIGH);
+    digitalWrite(ledClock,LOW);
+
+    //only the second parameter is displayed below, due to the "false" flag.
+    DisplayDigits(number_CD_ToDisplay, number_CD_ToDisplay, false);
+  }
 }
 
-void ReadTime()
+void DisplayTime()
 {
   //begin read Clock
   unsigned long currentTime = millis();
@@ -153,9 +180,24 @@ void ReadTime()
     readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
     number_AB_ToDisplay = hour;
     number_CD_ToDisplay = minute;
+
+    digitalWrite(ledTemperature,LOW);
+    digitalWrite(ledClock,HIGH);
+
+    DisplayDigits(hour, minute, true);
   }
 }
 
+void TurnOffClock()
+{
+  TurnOffLeds();
+  TurnOffTubes();
+}
+void TurnOffLeds()
+{
+  digitalWrite(ledTemperature,LOW);
+  digitalWrite(ledClock,LOW);
+}
 void TurnOffTubes()
 {
   byte b = GetEmptyByte();
@@ -168,17 +210,34 @@ void TurnOffTubes()
 
 boolean ReadPIR()
 {
-  int pirVal = 0;
-  pirVal = digitalRead(inputPIRPin);
-  //Serial.print(pirVal);
-  if (pirVal == HIGH)
+  unsigned long currentTime = millis();
+  if (currentTime - controlPIRBtnTime >= pIRBtnInterval)
   {
-    //Serial.println("  true");
-    return true; 
-  } 
-  else {
-    //Serial.println("  false");
-    return false; 
+    controlPIRBtnTime = currentTime;
+    int pirVal = 0;
+    pirVal = digitalRead(inputPIRPin);
+    //Serial.print(pirVal);
+    if (pirVal == HIGH)
+    {
+      Serial.println("PIR true");
+      pIR_CurrentTime = currentTime;
+      return true; 
+    } 
+    else {
+      long delay = (currentTime - pIR_CurrentTime) / 1000;
+      if (delay > pIR_Timeout)
+      {
+        Serial.println(delay);
+        Serial.println("PIR READ false");
+        return false;
+      } else {
+        Serial.println(delay);
+        Serial.println("PIR READ true");
+        return true;
+      }
+    }
+  } else {
+    return pirActive;
   }
 }
 
@@ -220,13 +279,13 @@ void ClockModeClick()
     {
       //Enter Temperature Mode
       clock_mode = "clock";
-      Serial.println("Clock mode");
+      //Serial.println("Clock mode");
     } 
     else
     {
       //Enter Clock Mode
       clock_mode = "temperature";
-      Serial.println("temp mode");      
+      //Serial.println("temp mode");      
     }
   }
 }
@@ -329,9 +388,9 @@ int ReadDHT()
 
 void SlotEffect()
 {
-  for (int s = 2; s <= 9; s++)
+  for (unsigned int s = 2; s <= 9; s++)
   {
-    int slot_n;
+    unsigned int slot_n;
     slot_n = s + s * 10;
     byte b;
     b = GetShiftByte(slot_n);
@@ -347,17 +406,12 @@ void SlotEffect()
   }
 }
 
-byte GetShiftByte(int n)
+byte GetShiftByte(unsigned int n)
 {
   byte b = 0;
   int ones = n%10;
   n = n/10;
   int dec = n%10;
-
-  //Serial.print("ones:");
-  //Serial.println(ones);
-  //Serial.print("dec:");
-  //Serial.println(dec);
 
   b = GetSingleDigit(true, b, ones);
   b = GetSingleDigit(false, b, dec);
@@ -378,7 +432,7 @@ byte GetEmptyByte()
   return b;
 }
 
-byte GetSingleDigit(boolean isUnits, byte b, int n)
+byte GetSingleDigit(boolean isUnits, byte b, unsigned int n)
 {
   int a_pos, b_pos, c_pos, d_pos;
   //Serial.print("n:");Serial.println(n);
