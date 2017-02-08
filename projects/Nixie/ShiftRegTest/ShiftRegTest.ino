@@ -184,6 +184,11 @@ void DisplayTime()
     digitalWrite(ledTemperature,LOW);
     digitalWrite(ledClock,HIGH);
 
+    // Serial.print("hour:");
+    // Serial.print(hour);
+    // Serial.print("  minutes:");
+    // Serial.println(minute);
+
     DisplayDigits(hour, minute, true);
   }
 }
@@ -216,10 +221,9 @@ boolean ReadPIR()
     controlPIRBtnTime = currentTime;
     int pirVal = 0;
     pirVal = digitalRead(inputPIRPin);
-    //Serial.print(pirVal);
     if (pirVal == HIGH)
     {
-      Serial.println("PIR true");
+      //Serial.println("PIR true");
       pIR_CurrentTime = currentTime;
       return true; 
     } 
@@ -251,8 +255,8 @@ void HourBtnClick()
     int btn_hour_value = 0;
     btn_hour_value = digitalRead(buttonHour);
 
-    //by default is LOW
-    if (btn_hour_value == HIGH) {
+    //by default is HIGH due to internal resistor usage (usually it's LOW')
+    if (btn_hour_value == LOW) {
       //get hour
     byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
     readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
@@ -300,8 +304,8 @@ void MinuteBtnClick()
     int btn_minute_value = 0;
     btn_minute_value = digitalRead(buttonMinute);
 
-    //by default is LOW
-    if (btn_minute_value == HIGH) {
+    //by default is HIGH due to internal resistor usage (usually it's LOW')
+    if (btn_minute_value == LOW) {
       //get minute
     byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
     readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
