@@ -55,8 +55,8 @@ unsigned long controlPIRBtnTime = 0;
 
 //Interval VARS
 const long clockBtnInterval = 500;
-const long hourBtnInterval = 250;
-const long minuteBtnInterval = 250;
+const long hourBtnInterval = 200;
+const long minuteBtnInterval = 200;
 const long readClockInterval = 700;
 const long readDHTInterval = 700;
 const long pIRBtnInterval = 700;
@@ -67,6 +67,11 @@ boolean pirActive;
 //value is in seconds
 const unsigned int pIR_Timeout = 60;
 unsigned long pIR_CurrentTime = 0;
+unsigned long lastTimeBtnClicked = 0;
+
+unsigned int lastMinute;  //used for determing when it's a new minute and when it's stil the same minute
+boolean isButonClicked = false;
+int buttonClickedSlotThreshold = 10000; //value is in miliseconds
 
 void setup() {
   Wire.begin();
@@ -143,6 +148,11 @@ void DisplayDigits(unsigned int ab, unsigned int cd, bool displayFourDigits)
     digitalWrite(latchPin_h, LOW);
     shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
     digitalWrite(latchPin_h, HIGH);
+  } else {
+    b = GetEmptyByte();
+    digitalWrite(latchPin_h, LOW);
+    shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
+    digitalWrite(latchPin_h, HIGH);
   }
   
   b = GetShiftByte(cd);
@@ -165,7 +175,11 @@ void DisplayDHT()
     digitalWrite(ledClock,LOW);
 
     //only the second parameter is displayed below, due to the "false" flag.
-    DisplayDigits(number_CD_ToDisplay, number_CD_ToDisplay, false);
+    Serial.print("number_AB_ToDisplay");
+    Serial.println(number_AB_ToDisplay);
+    Serial.print("number_CD_ToDisplay");
+    Serial.println(number_CD_ToDisplay);
+    DisplayDigits(number_AB_ToDisplay, number_CD_ToDisplay, false);
   }
 }
 
@@ -180,15 +194,39 @@ void DisplayTime()
     readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
     number_AB_ToDisplay = hour;
     number_CD_ToDisplay = minute;
-
     digitalWrite(ledTemperature,LOW);
     digitalWrite(ledClock,HIGH);
 
     // Serial.print("hour:");
     // Serial.print(hour);
     // Serial.print("  minutes:");
-    // Serial.println(minute);
+    // Serial.print(minute);
+    // Serial.print(" seconds");
+    // Serial.println(second);
 
+    //troubleshoot the thresholds
+    // Serial.print("currentTime:");
+    // Serial.print(currentTime);
+    // Serial.print("^^^^^^lastTimeBtnClicked:");
+    // Serial.println(lastTimeBtnClicked);
+    // Serial.print("buttonClickedSlotThreshold:");
+    // Serial.println(buttonClickedSlotThreshold);
+
+    if (lastMinute != minute)
+    {
+      lastMinute = minute;
+
+      
+      if ((currentTime - lastTimeBtnClicked) > buttonClickedSlotThreshold) 
+      {
+        Serial.println("OUTSIDE threshold");
+        SlotEffect();
+      }
+    } else {
+        Serial.println("inside threshold");
+      }
+    
+    
     DisplayDigits(hour, minute, true);
   }
 }
@@ -209,6 +247,10 @@ void TurnOffTubes()
   digitalWrite(latchPin_h, LOW);
   shiftOut(dataPin_h, clockPin_h, MSBFIRST, b);
   digitalWrite(latchPin_h, HIGH);
+
+  digitalWrite(latchPin_m, LOW);
+  shiftOut(dataPin_m, clockPin_m, MSBFIRST, b);
+  digitalWrite(latchPin_m, HIGH);
 }
 
 // This method sends bits to the shift register:
@@ -231,12 +273,12 @@ boolean ReadPIR()
       long delay = (currentTime - pIR_CurrentTime) / 1000;
       if (delay > pIR_Timeout)
       {
-        Serial.println(delay);
-        Serial.println("PIR READ false");
+        // Serial.println(delay);
+        // Serial.println("PIR READ false");
         return false;
       } else {
-        Serial.println(delay);
-        Serial.println("PIR READ true");
+        // Serial.println(delay);
+        // Serial.println("PIR READ true");
         return true;
       }
     }
@@ -256,6 +298,8 @@ void HourBtnClick()
     btn_hour_value = digitalRead(buttonHour);
 
     //by default is HIGH due to internal resistor usage (usually it's LOW')
+    Serial.print("btn_hour_value:");
+    Serial.println(btn_hour_value);
     if (btn_hour_value == LOW) {
       //get hour
     byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
@@ -300,12 +344,12 @@ void MinuteBtnClick()
   if (currentTime - controlMinuteBtnTime >= minuteBtnInterval)
   {
     controlMinuteBtnTime = currentTime;
-
     int btn_minute_value = 0;
     btn_minute_value = digitalRead(buttonMinute);
 
     //by default is HIGH due to internal resistor usage (usually it's LOW')
     if (btn_minute_value == LOW) {
+      lastTimeBtnClicked = currentTime;
       //get minute
     byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
     readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
