@@ -120,23 +120,7 @@ void loop() {
     }
     
   }
-
   delay(500);
-
-  //delay(5000);
-
-  //if (Serial.available() > 0) {
-  // ASCII '0' through '9' characters are
-  // represented by the values 48 through 57.
-  // so if the user types a number from 0 through 9 in ASCII, 
-  // you can subtract 48 to get the actual value:
-  //int bitToSet = Serial.read() - 48;
-  //SlotEffect();
-  // write to the shift register with the correct bit set high:
-  //registerWrite(bitToSet, HIGH);
-
-  //}
-  //registerWrite(5, HIGH);
 }
 
 void DisplayDigits(unsigned int ab, unsigned int cd, bool displayFourDigits)
@@ -175,10 +159,6 @@ void DisplayDHT()
     digitalWrite(ledClock,LOW);
 
     //only the second parameter is displayed below, due to the "false" flag.
-    Serial.print("number_AB_ToDisplay");
-    Serial.println(number_AB_ToDisplay);
-    Serial.print("number_CD_ToDisplay");
-    Serial.println(number_CD_ToDisplay);
     DisplayDigits(number_AB_ToDisplay, number_CD_ToDisplay, false);
   }
 }
@@ -197,35 +177,14 @@ void DisplayTime()
     digitalWrite(ledTemperature,LOW);
     digitalWrite(ledClock,HIGH);
 
-    // Serial.print("hour:");
-    // Serial.print(hour);
-    // Serial.print("  minutes:");
-    // Serial.print(minute);
-    // Serial.print(" seconds");
-    // Serial.println(second);
-
-    //troubleshoot the thresholds
-    // Serial.print("currentTime:");
-    // Serial.print(currentTime);
-    // Serial.print("^^^^^^lastTimeBtnClicked:");
-    // Serial.println(lastTimeBtnClicked);
-    // Serial.print("buttonClickedSlotThreshold:");
-    // Serial.println(buttonClickedSlotThreshold);
-
     if (lastMinute != minute)
     {
       lastMinute = minute;
-
-      
       if ((currentTime - lastTimeBtnClicked) > buttonClickedSlotThreshold) 
       {
-        Serial.println("OUTSIDE threshold");
         SlotEffect();
       }
-    } else {
-        Serial.println("inside threshold");
-      }
-    
+    }
     
     DisplayDigits(hour, minute, true);
   }
@@ -265,7 +224,6 @@ boolean ReadPIR()
     pirVal = digitalRead(inputPIRPin);
     if (pirVal == HIGH)
     {
-      //Serial.println("PIR true");
       pIR_CurrentTime = currentTime;
       return true; 
     } 
@@ -273,12 +231,8 @@ boolean ReadPIR()
       long delay = (currentTime - pIR_CurrentTime) / 1000;
       if (delay > pIR_Timeout)
       {
-        // Serial.println(delay);
-        // Serial.println("PIR READ false");
         return false;
       } else {
-        // Serial.println(delay);
-        // Serial.println("PIR READ true");
         return true;
       }
     }
@@ -298,8 +252,6 @@ void HourBtnClick()
     btn_hour_value = digitalRead(buttonHour);
 
     //by default is HIGH due to internal resistor usage (usually it's LOW')
-    Serial.print("btn_hour_value:");
-    Serial.println(btn_hour_value);
     if (btn_hour_value == LOW) {
       //get hour
     byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
@@ -327,13 +279,11 @@ void ClockModeClick()
     {
       //Enter Temperature Mode
       clock_mode = "clock";
-      //Serial.println("Clock mode");
     } 
     else
     {
       //Enter Clock Mode
-      clock_mode = "temperature";
-      //Serial.println("temp mode");      
+      clock_mode = "temperature";     
     }
   }
 }
@@ -483,17 +433,13 @@ byte GetEmptyByte()
 byte GetSingleDigit(boolean isUnits, byte b, unsigned int n)
 {
   int a_pos, b_pos, c_pos, d_pos;
-  //Serial.print("n:");Serial.println(n);
-  //Serial.print("isUnits:");Serial.println(isUnits);
   if (isUnits) {
-    //Serial.println("is units = true");
     a_pos = 0;
     b_pos = 1;
     c_pos = 2;
     d_pos = 3;
   } 
   else {
-    //Serial.println("is units = false");
     a_pos = 4;
     b_pos = 5;
     c_pos = 6;
