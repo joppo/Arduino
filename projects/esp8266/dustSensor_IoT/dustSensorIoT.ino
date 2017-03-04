@@ -2,11 +2,10 @@
 #include <ESP8266WiFi.h>
  
 // replace with your channel’s thingspeak API key and your SSID and password
-String apiKey = "ASSF6HC8PXDE12EE";
-const char* wifiSSID = "VIVACOM 3G WI-FI";
-const char* wifiPassword = "28012046";
-// const char* ssid = "M-Tel_D7D0";
-// const char* password = "48575443EFD7D02A";
+String apiKey = "your api key";
+const char* wifiSSID = "your SID";
+const char* wifiPassword = "your PWD";
+
 const char* server = "api.thingspeak.com";
 unsigned int wifiSeqId = 0;
  
@@ -69,6 +68,12 @@ void loop()
     // calculate P1 ratio
     ratioP1 = 0.1 * float(lpoP1) / float(sampleTime);
 
+    Serial.print("lpoP1:");
+    Serial.println(lpoP1);
+    Serial.print("lpoP2:");
+    Serial.println(lpoP2);
+    
+    
     // calculate P2 ratio
     ratioP2 = 0.1 * float(lpoP2) / float(sampleTime);
 
@@ -165,17 +170,36 @@ void data2WiFi() {
     String payload = "";
 
     int ratioP1Int = (ratioP1 + 0.005) * 100;         // convert P1 ratio to an integer
+    Serial.print("ratioP1:");
+    Serial.println(ratioP1);
+    Serial.print("ratioP1Int:");
+    Serial.println(ratioP1Int);
+
     int ratioP2Int = (ratioP2 + 0.005) * 100;         // convert P2 ratio to an integer
 
     measurement += dec2Hex(wifiSeqId);
     measurement += dec2Hex(ratioP1Int);
     measurement += dec2Hex(ratioP2Int);
     measurement += dec2Hex(nP1);
+
+    Serial.print("nP1:");
+    Serial.println(nP1);
+
+
+    float p1_Occupancy = (float(lpoP1) / 1000) / float(sampleTime) * 100;
+    Serial.println("++++++++++++++++++++++++++++++");
+    Serial.print("p1_Occupancy:");
+    Serial.println(p1_Occupancy);
+    Serial.println("++++++++++++++++++++++++++++++");
+
+    float p2_Occupancy = (float(lpoP2) / 1000) / float(sampleTime) * 100;
+    Serial.println("++++++++++++++++++++++++++++++");
+    Serial.print("p2_Occupancy:");
+    Serial.println(p2_Occupancy);
+    Serial.println("++++++++++++++++++++++++++++++");
+
+
     measurement += dec2Hex(nP2);
-    Serial.print("P1:");
-    Serial.println(String(ratioP1Int));
-    Serial.print("P2:");
-    Serial.println(String(ratioP2Int));
-    TalkToHub(String(ratioP1Int), String(ratioP2Int));
+    TalkToHub(String(p1_Occupancy), String(p2_Occupancy));
     wifiSeqId++;                                       // Increment wifi sequence id.
 }
