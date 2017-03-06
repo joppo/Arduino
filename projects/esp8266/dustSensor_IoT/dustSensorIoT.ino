@@ -65,20 +65,8 @@ void setup()
  
 void loop() 
 {
-    // calculate P1 ratio
-    ratioP1 = 0.1 * float(lpoP1) / float(sampleTime);
-
-    Serial.print("lpoP1:");
-    Serial.println(lpoP1);
-    Serial.print("lpoP2:");
-    Serial.println(lpoP2);
-    
-    
-    // calculate P2 ratio
-    ratioP2 = 0.1 * float(lpoP2) / float(sampleTime);
-
     // send data via WiFi:
-    data2WiFi();
+    TalkToHub();
 
     // Reset lpo values:
     lpoP1 = 0;
@@ -88,18 +76,6 @@ void loop()
     delay(sampleTime);
 
     //TalkToHub();
-}
-
-// Helper functions
-/*
-  The dec2Hex routine converts decimal values to a 2 bytes fixed width
-  HEX representation.
-*/
-String dec2Hex(unsigned int decValue, byte desiredStringLength = 4) {
-  String hexString = String(decValue, HEX);
-  while (hexString.length() < desiredStringLength) hexString = "0" + hexString;
-
-  return hexString;
 }
 
 unsigned long limit(unsigned long x) {
@@ -137,69 +113,41 @@ void measureStateChange() {
   }
 }
 
-void TalkToHub(String field1, String field2)
+void TalkToHub()
 {
-       
-        if (client.connect(server,80)) {
-        String postStr = apiKey;
-        postStr +="&field1=";
-        postStr += String(field1);
-        postStr +="&field2=";
-        postStr += String(field2);
-        postStr += "\r\n\r\n";
-        
-        client.print("POST /update HTTP/1.1\n");
-        client.print("Host: api.thingspeak.com\n");
-        client.print("Connection: close\n");
-        client.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n");
-        client.print("Content-Type: application/x-www-form-urlencoded\n");
-        client.print("Content-Length: ");
-        client.print(postStr.length());
-        client.print("\n\n");
-        client.print(postStr);
+    float p1_lpo_ratio = (float(lpoP1) / 1000) / float(sampleTime) * 100;
+    float p2_lpo_ratio = (float(lpoP2) / 1000) / float(sampleTime) * 100;
+
+    //concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
+    //concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
+
+    if (client.connect(server,80)) {
+    String postStr = apiKey;
+    postStr +="&field1=";
+    postStr += String(p1_lpo_ratio);
+    postStr +="&field2=";
+    postStr += String(nP1);
+    postStr +="&field3=";
+    postStr += String(p2_lpo_ratio);
+    postStr +="&field4=";
+    postStr += String(nP2);
+    postStr +="&field5=";
+    postStr += String(nP2);
+    postStr +="&field6=";
+    postStr += String(nP2);
+    postStr += "\r\n\r\n";
+
+    client.print("POST /update HTTP/1.1\n");
+    client.print("Host: api.thingspeak.com\n");
+    client.print("Connection: close\n");
+    client.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n");
+    client.print("Content-Type: application/x-www-form-urlencoded\n");
+    client.print("Content-Length: ");
+    client.print(postStr.length());
+    client.print("\n\n");
+    client.print(postStr);
     }
     client.stop();
     
-    // thingspeak needs at least a 15 sec delay between updates
-    // 20 seconds to be safe
-    //delay(20000);
-}
-
-void data2WiFi() {
-    String measurement = "";
-    String payload = "";
-
-    int ratioP1Int = (ratioP1 + 0.005) * 100;         // convert P1 ratio to an integer
-    Serial.print("ratioP1:");
-    Serial.println(ratioP1);
-    Serial.print("ratioP1Int:");
-    Serial.println(ratioP1Int);
-
-    int ratioP2Int = (ratioP2 + 0.005) * 100;         // convert P2 ratio to an integer
-
-    measurement += dec2Hex(wifiSeqId);
-    measurement += dec2Hex(ratioP1Int);
-    measurement += dec2Hex(ratioP2Int);
-    measurement += dec2Hex(nP1);
-
-    Serial.print("nP1:");
-    Serial.println(nP1);
-
-
-    float p1_Occupancy = (float(lpoP1) / 1000) / float(sampleTime) * 100;
-    Serial.println("++++++++++++++++++++++++++++++");
-    Serial.print("p1_Occupancy:");
-    Serial.println(p1_Occupancy);
-    Serial.println("++++++++++++++++++++++++++++++");
-
-    float p2_Occupancy = (float(lpoP2) / 1000) / float(sampleTime) * 100;
-    Serial.println("++++++++++++++++++++++++++++++");
-    Serial.print("p2_Occupancy:");
-    Serial.println(p2_Occupancy);
-    Serial.println("++++++++++++++++++++++++++++++");
-
-
-    measurement += dec2Hex(nP2);
-    TalkToHub(String(p1_Occupancy), String(p2_Occupancy));
     wifiSeqId++;                                       // Increment wifi sequence id.
 }
