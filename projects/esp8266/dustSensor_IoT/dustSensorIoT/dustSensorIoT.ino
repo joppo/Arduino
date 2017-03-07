@@ -65,6 +65,8 @@ void setup()
  
 void loop() 
 {
+  Serial.println("start loop");
+
     // send data via WiFi:
     TalkToHub();
 
@@ -73,7 +75,9 @@ void loop()
     lpoP2 = 0;
 
     // start next sampling period:
+    Serial.println("end loop before delay");
     delay(sampleTime);
+    Serial.println("end loop after delay");
 
     //TalkToHub();
 }
@@ -118,21 +122,31 @@ void TalkToHub()
     float p1_lpo_ratio = (float(lpoP1) / 1000) / float(sampleTime) * 100;
     float p2_lpo_ratio = (float(lpoP2) / 1000) / float(sampleTime) * 100;
 
-    //concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
-    //concentration = 1.1*pow(ratio,3)-3.8*pow(ratio,2)+520*ratio+0.62; // using spec sheet curve
+    float concentration_p1 = 1.1 * pow(p1_lpo_ratio, 3) - 3.8 * pow(p1_lpo_ratio, 2) + 520 * p1_lpo_ratio + 0.62; // using spec sheet curve
+    float concentration_p2 = 1.1 * pow(p2_lpo_ratio, 3) - 3.8 * pow(p2_lpo_ratio, 2) + 520 * p2_lpo_ratio + 0.62; // using spec sheet curve
+
+
+    Serial.print("p1_lpo_ratio");
+    Serial.println(p1_lpo_ratio);
+    Serial.print("p2_lpo_ratio");
+    Serial.println(p2_lpo_ratio);
+    Serial.print("concentration_p1");
+    Serial.println(concentration_p1);
+    Serial.print("concentration_p2");
+    Serial.println(concentration_p2);
 
     if (client.connect(server,80)) {
     String postStr = apiKey;
     postStr +="&field1=";
     postStr += String(p1_lpo_ratio);
     postStr +="&field2=";
-    postStr += String(nP1);
+    postStr += String(concentration_p1);
     postStr +="&field3=";
-    postStr += String(p2_lpo_ratio);
+    postStr += String(nP1);
     postStr +="&field4=";
-    postStr += String(nP2);
+    postStr += String(p2_lpo_ratio);
     postStr +="&field5=";
-    postStr += String(nP2);
+    postStr += String(concentration_p2);
     postStr +="&field6=";
     postStr += String(nP2);
     postStr += "\r\n\r\n";
