@@ -2,17 +2,17 @@
 #include <ESP8266WiFi.h>
  
 // replace with your channel’s thingspeak API key and your SSID and password
-String apiKey = "your api key";
-const char* wifiSSID = "your SID";
-const char* wifiPassword = "your PWD";
+String apiKey = "ASSF6HC8PXDE12EE";
+const char* wifiSSID = "M-Tel_D7D0";
+const char* wifiPassword = "48575443EFD7D02A";
 
 const char* server = "api.thingspeak.com";
 unsigned int wifiSeqId = 0;
  
 // Constants
-const int pinP1 = D1;                   // Dust sensor P1 connected to digital pin D1
-const int pinP2 = D2;                   // Dust sensor P2 connected to digital pin D2
-const unsigned long sampleTime = 30000; // Length of the particle sampling period (30000ms = 30s)
+const int pinP1 = 2; //D1;                   // Dust sensor P1 connected to digital pin D1
+const int pinP2 = 16; //D2;                   // Dust sensor P2 connected to digital pin D2
+const unsigned long sampleTime = 20000; // Length of the particle sampling period (60000ms = 60 seconds)
 
 
 // Variables
