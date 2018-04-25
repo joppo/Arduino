@@ -3,10 +3,10 @@
  
 // replace with your channel’s thingspeak API key and your SSID and password
 String apiKey = "ASSF6HC8PXDE12EE";
-//const char* wifiSSID = "M-Tel_D7D0";
-//const char* wifiPassword = "48575443EFD7D02A";
-const char* wifiSSID = "repotec";
-const char* wifiPassword = "0888309918";
+const char* wifiSSID = "M-Tel_D7D0";
+const char* wifiPassword = "48575443EFD7D02A";
+//const char* wifiSSID = "repotec";
+//const char* wifiPassword = "0888309918";
 //const char* wifiSSID = "Lumia_z";
 //const char* wifiPassword = "zzzggg111";
 
@@ -14,7 +14,7 @@ const char* server = "api.thingspeak.com";
 unsigned int wifiSeqId = 0;
  
 // Constants
-const int pinP1 = 16; //D1;                   // Dust sensor P1 connected to digital pin D1
+const int pinP1 = 14; //D1;                   // Dust sensor P1 connected to digital pin D1
 const int pinP2 = 2; //D2;                   // Dust sensor P2 connected to digital pin D2
 const unsigned long sampleTime = 60000; // Length of the particle sampling period (60000ms = 60 seconds)
 
@@ -77,7 +77,8 @@ void loop()
     // Reset lpo values:
     lpoP1 = 0;
     lpoP2 = 0;
-
+    nP1 = 0;
+    nP2 = 0;
     // start next sampling period:
     Serial.println("end loop before delay");
     delay(sampleTime);
