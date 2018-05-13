@@ -1,0 +1,8 @@
+HostName=SmolyanskaHub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=wn3gPQJVqu4DR7WMmVP6rawwg8DHV/bNio69f8QRIFw=
+
+iothub-explorer login "HostName=SmolyanskaHub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=wn3gPQJVqu4DR7WMmVP6rawwg8DHV/bNio69f8QRIFw="
+
+iothub-explorer get "1A-SM-PWM-01C"
+iothub-explorer monitor-events "1A-SM-PWM-01C" --login "HostName=SmolyanskaHub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=wn3gPQJVqu4DR7WMmVP6rawwg8DHV/bNio69f8QRIFw="
+
+HostName=SmolyanskaHub.azure-devices.net;DeviceId=1A-SM-PWM-01C;SharedAccessKey=/9/jiRV6DUHtOGNoNbqUUKqWVbWpRsvqu3mM9zYLUPw=

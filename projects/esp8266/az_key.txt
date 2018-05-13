@@ -1,0 +1,5 @@
+r/w key
+HostName=SmolyanskaHub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=J1V09JFl8jmhqsEtwS41dr5cI6qE0H/1xEKYJSVBOWk=
+
+
+HostName=SmolyanskaHub.azure-devices.net;DeviceId=1A-SM-PWM-01C;SharedAccessKey=TDstiMR71A1PJ7mAXSTRhy2Z1l1w4R5TB3VR5AraBIo=
