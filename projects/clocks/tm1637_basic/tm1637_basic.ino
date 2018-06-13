@@ -74,24 +74,24 @@ void loop()
 // delay(1500);
 SetLEDBrightness();
 
-//ModeBtnClick();
+ModeBtnClick();
 HourBtnClick();
 MinuteBtnClick();
 // MinuteMinusBtnClick();
 
-  // if (display_mode == "clock") {
-  //   DisplayTime();
+  if (display_mode == "clock") {
+    DisplayTime();
     
-  //   StartModeLeds(display_mode);
-  // } else if (display_mode == "temperature") {
+    StartModeLeds(display_mode);
+  } else if (display_mode == "temperature") {
      DisplayDHT(display_mode);
 
-  //   StartModeLeds(display_mode);
-  // } else if (display_mode == "humidity")
-  // {
-  //   DisplayDHT(display_mode);
-  //   StartModeLeds(display_mode);
-  // }
+    StartModeLeds(display_mode);
+  } else if (display_mode == "humidity")
+  {
+    DisplayDHT(display_mode);
+    StartModeLeds(display_mode);
+  }
 }
 
 void StartModeLeds(String led_mode)
