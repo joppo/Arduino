@@ -5,20 +5,21 @@
 
 dht DHT;
 // DHT Sensor Setup
-#define DHT22_PIN 13 //5 // We have connected the DHT to Digital Pin 2
+#define DHT22_PIN 12 //5 // We have connected the DHT to Digital Pin 2
 
 // Display connection pins (Digital Pins)
 #define CLK 8
 #define DIO 9
 #define DS3231_I2C_ADDRESS 0x68
 
-const long dhtInterval = 700;
+const long dhtInterval = 2000;
 const long brightnessInterval = 700;
 const long clockInterval = 700;
 const long modeBtnInterval = 250;
 const long clockBtnInterval = 250;
 const long ledInterval = 250;
 const long secondInterval = 500;
+const long tcrt5000_threshold = 900;
 
 
 unsigned long controlBrightnessTime = 0;
@@ -38,25 +39,27 @@ int buttonMode = 7;
 int buttonHour = 3;
 int buttonMinute = 4;
 int buttonMinuteMinus = 10;
-int greenLed = 2;
-int yellowLed = 3;
-int redLed = 4;
-int diodeTCRT5000 = 6;
-int analogInputTCRT5000 = 0;
+// int greenLed = 2;
+// int yellowLed = 3;
+// int redLed = 4;
+// int diodeTCRT5000 = 6;
+//String analogInputTCRT5000 = "0";
 
 String display_mode;
 
 void setup()
 {
   pinMode(buttonMode, INPUT);
-  pinMode(greenLed, OUTPUT);
-  pinMode(redLed, OUTPUT);
-  pinMode(yellowLed, OUTPUT);
+  // pinMode(diodeTCRT5000,OUTPUT);
+  // digitalWrite(diodeTCRT5000,HIGH);
+  // pinMode(greenLed, OUTPUT);
+  // pinMode(redLed, OUTPUT);
+  // pinMode(yellowLed, OUTPUT);
   Wire.begin();
 
   //Serial.begin(9600);
   Serial.begin(115200);
-  display_mode = "clock";
+  display_mode = "temperature";
   
   // set the initial time here:
   // DS3231 seconds, minutes, hours, day, date, month, year
@@ -68,27 +71,27 @@ void loop()
 //if hour is clicked - increment hour
 //if minute is clicked - increment minute
 //if mode button is clicked - change mode.
-//delay(100);
+// delay(1500);
 SetLEDBrightness();
 
-ModeBtnClick();
+//ModeBtnClick();
 HourBtnClick();
 MinuteBtnClick();
-MinuteMinusBtnClick();
+// MinuteMinusBtnClick();
 
-  if (display_mode == "clock") {
-    DisplayTime();
+  // if (display_mode == "clock") {
+  //   DisplayTime();
+    
+  //   StartModeLeds(display_mode);
+  // } else if (display_mode == "temperature") {
+     DisplayDHT(display_mode);
 
-    StartModeLeds(display_mode);
-  } else if (display_mode == "temperature") {
-    DisplayDHT(display_mode);
-
-    StartModeLeds(display_mode);
-  } else if (display_mode == "humidity")
-  {
-    DisplayDHT(display_mode);
-    StartModeLeds(display_mode);
-  }
+  //   StartModeLeds(display_mode);
+  // } else if (display_mode == "humidity")
+  // {
+  //   DisplayDHT(display_mode);
+  //   StartModeLeds(display_mode);
+  // }
 }
 
 void StartModeLeds(String led_mode)
@@ -98,19 +101,19 @@ void StartModeLeds(String led_mode)
   {
     ledTime = currentTime;
     if (led_mode == "clock") {
-      digitalWrite(greenLed, HIGH);
-      digitalWrite(redLed, LOW);
-      digitalWrite(yellowLed, LOW);
+      // digitalWrite(greenLed, HIGH);
+      // digitalWrite(redLed, LOW);
+      // digitalWrite(yellowLed, LOW);
     } else if (led_mode == "temperature")
     {
-      digitalWrite(greenLed, LOW);
-      digitalWrite(redLed, LOW);
-      digitalWrite(yellowLed, HIGH);
+      // digitalWrite(greenLed, LOW);
+      // digitalWrite(redLed, LOW);
+      // digitalWrite(yellowLed, HIGH);
     } else if (led_mode == "humidity")
     {
-      digitalWrite(greenLed, LOW);
-      digitalWrite(redLed, HIGH);
-      digitalWrite(yellowLed, LOW);
+      // digitalWrite(greenLed, LOW);
+      // digitalWrite(redLed, HIGH);
+      // digitalWrite(yellowLed, LOW);
     }
   }
 }
@@ -124,7 +127,8 @@ void HourBtnClick()
 
     int btn_hour_value = 0;
     btn_hour_value = digitalRead(buttonHour);
-
+    // Serial.print("hour btn value");
+    // Serial.println(btn_hour_value);
     //by default is LOW
     if (btn_hour_value == HIGH) {
       //get hour
@@ -200,14 +204,29 @@ void ModeBtnClick()
   if (currentTime - controlModeBtnTime >= modeBtnInterval)
   {
     controlModeBtnTime = currentTime;
-  //int btn_mode_value = 0;
-  int tcrt_value = analogRead(analogInputTCRT5000);
-  //btn_mode_value = digitalRead(buttonMode);
+  
+  //int tcrt_value = analogRead(analogInputTCRT5000);
+  //digitalWrite(diodeTCRT5000,HIGH);
+  //delayMicroseconds(500);
+  int tcrt_value = analogRead(A0);
 
-  //by default is LOW
+  // digitalWrite(diodeTCRT5000,LOW);
+  // delayMicroseconds(500);
+  // int tcrt_value_2 = analogRead(A0);
+  // int tcrt_real_value = tcrt_value - tcrt_value_2;
+
+  // Serial.print("tcrt_value: ");
+  // Serial.println(tcrt_value);
+
+  // Serial.print("tcrt_value_2: ");
+  // Serial.println(tcrt_value_2);
+
   //by default, tcrt5000 shows above 1000 units. We assume that a value that below 9000 means we 
   //have interference - i.e. object in front of the sensor
-  if (btn_mode_value == HIGH) {
+  // Serial.print("tcrt_real_value: ");
+  // Serial.println(tcrt_real_value);
+
+  if (tcrt_value < tcrt5000_threshold) {
       if (display_mode == "clock") {
         display_mode = "temperature";
       } else if (display_mode == "temperature")
@@ -265,7 +284,8 @@ void DisplayDHT(String mode)
     controlDHTTime = currentTime;
 
     int chk = DHT.read22(DHT22_PIN);
-  
+    Serial.println("reading from DHT22 lib");
+  Serial.println(chk);
     switch (chk)
     {
       case DHTLIB_OK:  
@@ -302,6 +322,8 @@ void DisplayDHT(String mode)
       else
         data[0] = display.encodeDigit(dec);
       data[1] = display.encodeDigit(ones);
+      Serial.print("temp:");
+      Serial.println(dec * 10 + ones);
     } else {
 
       display.setColon(false);
@@ -341,6 +363,9 @@ void DisplayTime()
     //num, leading zero, length, pos
     display.showNumberDec(hour, true, 2, 0);
     display.showNumberDec(minute, true, 2, 2);
+    Serial.print(hour);
+    Serial.print(":");
+    Serial.println(minute);
     //display.setColon(true);
   }
 
