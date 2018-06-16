@@ -15,7 +15,7 @@ dht DHT;
 const long dhtInterval = 2000;
 const long brightnessInterval = 700;
 const long clockInterval = 700;
-const long modeBtnInterval = 250;
+const long modeBtnInterval = 1000;
 const long clockBtnInterval = 250;
 const long ledInterval = 250;
 const long secondInterval = 500;
@@ -35,10 +35,11 @@ unsigned long controlSecondTime = 0;
 
 TM1637Display display(CLK, DIO);
 int photoResistorPin = 3;  //define a pin for Photo resistor
-int buttonMode = 7;
+// int buttonMode = 7;
 int buttonHour = 3;
 int buttonMinute = 4;
 int buttonMinuteMinus = 10;
+int ledWorking = 7;
 // int greenLed = 2;
 // int yellowLed = 3;
 // int redLed = 4;
@@ -49,14 +50,15 @@ String display_mode;
 
 void setup()
 {
-  pinMode(buttonMode, INPUT);
+  //pinMode(buttonMode, INPUT);
   // pinMode(diodeTCRT5000,OUTPUT);
   // digitalWrite(diodeTCRT5000,HIGH);
   // pinMode(greenLed, OUTPUT);
   // pinMode(redLed, OUTPUT);
   // pinMode(yellowLed, OUTPUT);
   Wire.begin();
-
+  pinMode(ledWorking, OUTPUT);
+  digitalWrite(ledWorking, HIGH);
   //Serial.begin(9600);
   Serial.begin(115200);
   display_mode = "temperature";
@@ -81,40 +83,11 @@ MinuteBtnClick();
 
   if (display_mode == "clock") {
     DisplayTime();
-    
-    StartModeLeds(display_mode);
   } else if (display_mode == "temperature") {
-     DisplayDHT(display_mode);
-
-    StartModeLeds(display_mode);
+    DisplayDHT(display_mode);
   } else if (display_mode == "humidity")
   {
     DisplayDHT(display_mode);
-    StartModeLeds(display_mode);
-  }
-}
-
-void StartModeLeds(String led_mode)
-{
-  unsigned long currentTime = millis();
-  if (currentTime - ledTime >= ledInterval)
-  {
-    ledTime = currentTime;
-    if (led_mode == "clock") {
-      // digitalWrite(greenLed, HIGH);
-      // digitalWrite(redLed, LOW);
-      // digitalWrite(yellowLed, LOW);
-    } else if (led_mode == "temperature")
-    {
-      // digitalWrite(greenLed, LOW);
-      // digitalWrite(redLed, LOW);
-      // digitalWrite(yellowLed, HIGH);
-    } else if (led_mode == "humidity")
-    {
-      // digitalWrite(greenLed, LOW);
-      // digitalWrite(redLed, HIGH);
-      // digitalWrite(yellowLed, LOW);
-    }
   }
 }
 
@@ -127,8 +100,6 @@ void HourBtnClick()
 
     int btn_hour_value = 0;
     btn_hour_value = digitalRead(buttonHour);
-    // Serial.print("hour btn value");
-    // Serial.println(btn_hour_value);
     //by default is LOW
     if (btn_hour_value == HIGH) {
       //get hour
@@ -138,7 +109,6 @@ void HourBtnClick()
       hour = 0;
     else
       hour = hour + 1;
-      
     //set hour with increment by 1
     setDS3231time(second, minute, hour, dayOfWeek,dayOfMonth, month, year);
     }
@@ -204,40 +174,19 @@ void ModeBtnClick()
   if (currentTime - controlModeBtnTime >= modeBtnInterval)
   {
     controlModeBtnTime = currentTime;
-  
-  //int tcrt_value = analogRead(analogInputTCRT5000);
-  //digitalWrite(diodeTCRT5000,HIGH);
-  //delayMicroseconds(500);
-  int tcrt_value = analogRead(A0);
+    int tcrt_value = analogRead(A0);
 
-  // digitalWrite(diodeTCRT5000,LOW);
-  // delayMicroseconds(500);
-  // int tcrt_value_2 = analogRead(A0);
-  // int tcrt_real_value = tcrt_value - tcrt_value_2;
-
-  // Serial.print("tcrt_value: ");
-  // Serial.println(tcrt_value);
-
-  // Serial.print("tcrt_value_2: ");
-  // Serial.println(tcrt_value_2);
-
-  //by default, tcrt5000 shows above 1000 units. We assume that a value that below 9000 means we 
-  //have interference - i.e. object in front of the sensor
-  // Serial.print("tcrt_real_value: ");
-  // Serial.println(tcrt_real_value);
-
-  if (tcrt_value < tcrt5000_threshold) {
-      if (display_mode == "clock") {
-        display_mode = "temperature";
-      } else if (display_mode == "temperature")
-      {
-        display_mode = "humidity";
-      } else if (display_mode == "humidity")
-      {
-        display_mode = "clock";
-      }
-    
-  }
+    if (tcrt_value < tcrt5000_threshold) {
+        if (display_mode == "clock") {
+          display_mode = "temperature";
+        } else if (display_mode == "temperature")
+        {
+          display_mode = "humidity";
+        } else if (display_mode == "humidity")
+        {
+          display_mode = "clock";
+        }
+    }
   }
 }
 
@@ -246,23 +195,15 @@ void SetLEDBrightness()
   int photoResult = analogRead(photoResistorPin);
   uint8_t brightness_value = 0x0d; //default value
   
-  if (photoResult > 800)
+  if (photoResult > 200)
   {
     brightness_value = 0x0d;
-  } else if (photoResult > 700) {
+  } else if (photoResult > 160) {
     brightness_value = 0x0c;
-  } else if (photoResult > 600) {
+  } else if (photoResult > 120) {
     brightness_value = 0x0b;
-  } else if (photoResult > 500) {
+  } else {
     brightness_value = 0x0a;
-  } else if (photoResult > 400) {
-    brightness_value = 0x09;
-  } else if (photoResult > 300) {
-    brightness_value = 0x08;
-  } else
-  {
-    //below 300
-    brightness_value = 0x08;
   }
   
   unsigned long currentTime = millis();
@@ -271,7 +212,6 @@ void SetLEDBrightness()
     controlBrightnessTime = currentTime;
     display.setBrightness(brightness_value);
   }
-  
 }
 
 //mode should contain "temperature" or "humidity"
@@ -299,7 +239,6 @@ void DisplayDHT(String mode)
     }
 
     uint8_t data[4];
-
     if (mode == "temperature") {
       
       display.setColon(false);
@@ -346,7 +285,6 @@ void DisplayDHT(String mode)
     }
     display.setSegments(data, 4, 0);
   }
-    
 }
 
 bool colonFlag = true;
@@ -356,7 +294,6 @@ void DisplayTime()
   if (currentTime - controlClockTime >= clockInterval)
   {
     controlClockTime = currentTime;
-    
     byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
     readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month, &year);
   
@@ -372,12 +309,10 @@ void DisplayTime()
   if (currentTime - controlSecondTime >= secondInterval)
   {
     controlSecondTime = currentTime;
-    
     display.setColon(colonFlag);
     colonFlag = !colonFlag;
   }
 }
-
 
 // Convert normal decimal numbers to binary coded decimal
 byte decToBcd(byte val)

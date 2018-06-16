@@ -33,7 +33,8 @@
 // loops using DHTLIB_TIMEOUT use at least 4 clock cycli
 // so 100 us takes max 400 loops
 // so by dividing F_CPU by 40000 we "fail" as fast as possible
-#define DHTLIB_TIMEOUT (F_CPU/40000)
+//#define DHTLIB_TIMEOUT (F_CPU/40000)
+#define DHTLIB_TIMEOUT 1000
 
 class dht
 {

@@ -82,6 +82,28 @@ void TM1637Display::setColon(bool colon)
   setSegments(m_digit,1,1);
 }
 
+void TM1637Display::setSegmentsEx(const uint8_t segments[], uint8_t length, uint8_t pos)
+{
+    // Write COMM1
+	start();
+	writeByte(TM1637_I2C_COMM1);
+	stop();
+
+	// Write COMM2 + first digit address
+	start();
+	writeByte(TM1637_I2C_COMM2 + (pos & 0x03));
+
+	// Write the data bytes
+	for (uint8_t k=0; k < length; k++)
+	  writeByte(segments[k]);
+
+	stop();
+
+	// Write COMM3 + brightness
+	start();
+	writeByte(TM1637_I2C_COMM3 + (m_brightness & 0x0f));
+	stop();
+}
 
 void TM1637Display::setSegments(const uint8_t segments[], uint8_t length, uint8_t pos)
 {
@@ -170,7 +192,7 @@ void TM1637Display::showNumberDec(int num, bool leading_zero, uint8_t length, ui
 
 void TM1637Display::bitDelay()
 {
-	delayMicroseconds(50);
+	delayMicroseconds(100);
 }
 
 void TM1637Display::start()
@@ -234,7 +256,81 @@ bool TM1637Display::writeByte(uint8_t b)
   return ack;
 }
 
+
 uint8_t TM1637Display::encodeDigit(uint8_t digit)
 {
 	return digitToSegment[digit & 0x0f];
 }
+
+
+void TM1637Display::showNumberDecDot(int num, bool leading_zero, uint8_t length, uint8_t pos, int decimal_dot_place)
+{
+	uint8_t digits[4];
+	const static int divisors[] = { 1, 10, 100, 1000 };
+	bool leading = true;
+
+	for(int8_t k = 0; k < 4; k++) {
+			int divisor = divisors[4 - 1 - k];
+			int d = num / divisor;
+
+			if (d == 0) {
+				if (leading_zero || !leading || (k == 3))
+					{
+			digits[k] = encodeDigit(d);
+			if (decimal_dot_place==k)
+			digits[k] += 0b10000000;
+			}
+				else
+					digits[k] = 0;
+			if (decimal_dot_place==k)
+			digits[k] += 0b10000000;
+			}
+
+
+
+			else {
+					digits[k] = encodeDigit(d);
+					num -= d * divisor;
+					leading = false;
+			if (decimal_dot_place==k)
+			digits[k] += 0b10000000;
+			}
+	}
+	setSegments(digits + (4 - length), length, pos);
+}
+
+void TM1637Display::showNumberDecEx(int num, uint8_t dots, bool leading_zero,
+                                    uint8_t length, uint8_t pos)
+{
+  uint8_t digits[4];
+	const static int divisors[] = { 1, 10, 100, 1000 };
+	bool leading = true;
+
+	for(int8_t k = 0; k < 4; k++) {
+	    int divisor = divisors[4 - 1 - k];
+		int d = num / divisor;
+    uint8_t digit = 0;
+
+		if (d == 0) {
+		  if (leading_zero || !leading || (k == 3))
+		      digit = encodeDigit(d);
+	      else
+		      digit = 0;
+		}
+		else {
+			digit = encodeDigit(d);
+			num -= d * divisor;
+			leading = false;
+		}
+    
+    // Add the decimal point/colon to the digit
+    digit |= (dots & 0x80); 
+    dots <<= 1;
+    
+    digits[k] = digit;
+	}
+
+	setSegmentsEx(digits + (4 - length), length, pos);
+}
+
+
