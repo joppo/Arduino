@@ -11,6 +11,6 @@ This means the projects are far from polished, hopefully they are easy to unders
 The libraries used are developed by their respective owners, I've only modified the TM1637Display library to add a method for displaying colons with:  
 setColon(bool colon)
 where colon parameter is 'true' for displaying the colons and 'false' for turning off the colons.  
-Devices used: Arduino pro mini / UNO  
+Devices used: Arduino pro mini / UNO and ESP8266 12e
 
 I'm available for questions and clarifications.
