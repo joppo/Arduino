@@ -7,12 +7,10 @@
 
 TFT scr = TFT(cs, dc, rst);
 
-
 int r = 0;
 int g = 255;
 int b = 0;
-int selectedTab = 0;
-
+int selectedTab = 2;
 
 void setup()
 {
@@ -20,20 +18,21 @@ void setup()
 	scr.background(0,0,0);
 	scr.setTextSize(1);
 	//scr.stroke(r, g, b);
-	scr.textWrap("TEST line perspective1 perspective2 perspective3", 6, 10);
-	//scr.fill(r, g, b);
-	drawMenuTabs(4, 1, r, g, b);
-	switch (selectedTab) {
-		case 0 : { drawMain(); }
-		case 1 : { drawTempGraph(); }
-		case 2 : { drawTemp(); }
-		case 3 : { drawClock(); }
-	}
+	//scr.textWrap("TEST line perspective1 perspective2 perspective3", 6, 10);
+	drawMenuTabs(6, selectedTab, r, g, b);
 }
 
 void loop()
 {
-	delay(200);
+	switch (selectedTab) {
+		case 0 : { drawMain(); }
+		case 1 : { drawClock(); }
+		case 2 : { drawTemp(); }
+		case 3 : { drawTempGraph(); }
+		case 4 : { drawHumidity(); }
+		case 5 : { drawHumidityGraph(); }
+	}
+	delay(700);
 }
 
 void drawMain()
@@ -43,10 +42,23 @@ void drawMain()
 	drawMainHumidity(r, g, b);
 }
 
+void drawClock() {
+	scr.setTextSize(7);
+	scr.text("23:", 30, 6);
+	scr.text("58", 75, 75);
+}
+void drawTemp() {
+	scr.setTextSize(10);
+	scr.text("28", 22, 38);
+}
+void drawTempGraph() {}
+void drawHumidity() {}
+void drawHumidityGraph() {}
+
 void drawMainHumidity(int r_hu, int g_hu, int b_hu)
 {
 	scr.setTextSize(1);
-	scr.text("Relative Humidity: 56%", 15, 64);
+	scr.text("Relative Humidity: 56%", 20, 64);
 }
 
 void drawMainClock(int r_cl, int g_cl, int b_cl)
@@ -77,8 +89,8 @@ void drawMenuTabs(int total_rects, int selected, int r_rect, int g_rect, int b_r
 		} else {
 			scr.noFill();
 		}
-		scr.rect(1, offset, 8, 8);	
-		offset += 14;	
+		scr.rect(1, offset, 6, 6);	
+		offset += 12;	
 
 	}
 
