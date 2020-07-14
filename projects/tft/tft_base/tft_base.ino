@@ -11,6 +11,7 @@ TFT scr = TFT(cs, dc, rst);
 int r = 0;
 int g = 255;
 int b = 0;
+int selectedTab = 0;
 
 
 void setup()
@@ -22,20 +23,46 @@ void setup()
 	scr.textWrap("TEST line perspective1 perspective2 perspective3", 6, 10);
 	//scr.fill(r, g, b);
 	drawMenuTabs(4, 1, r, g, b);
-	//scr.text("6tastliv, uspeshen v:", 6, 20);
-	//scr.text("bashtinstvoto,spaneto,", 6, 30);
-	//scr.text("football-a, 6ah-a", 6, 40);
-	//scr.text("i da namirash vreme", 6, 50);
-	//scr.text("za priklucheniq sys", 6, 60);
-	//scr.text("cqloto si (i ne samo)", 6, 70);
-	//scr.text("domochadie", 6, 80);
-	//scr.text("Nazdrave", 6, 90);
-
+	switch (selectedTab) {
+		case 0 : { drawMain(); }
+		case 1 : { drawTempGraph(); }
+		case 2 : { drawTemp(); }
+		case 3 : { drawClock(); }
+	}
 }
 
 void loop()
 {
 	delay(200);
+}
+
+void drawMain()
+{
+	drawMainClock(r, g, b);
+	drawMainTemperature(r, g, b);
+	drawMainHumidity(r, g, b);
+}
+
+void drawMainHumidity(int r_hu, int g_hu, int b_hu)
+{
+	scr.setTextSize(1);
+	scr.text("Relative Humidity: 56%", 15, 64);
+}
+
+void drawMainClock(int r_cl, int g_cl, int b_cl)
+{
+	scr.setTextSize(5);
+	scr.text("23:51", 10, 90);
+}
+
+void drawMainTemperature(int r_temp, int g_temp, int b_temp)
+{
+	scr.setTextSize(6);
+	scr.text("24", 60, 5);
+	scr.circle(140, 9, 9);
+	scr.circle(140, 9, 8);
+	scr.circle(140, 9, 7);
+	scr.circle(140, 9, 6);
 }
 
 void drawMenuTabs(int total_rects, int selected, int r_rect, int g_rect, int b_rect)
